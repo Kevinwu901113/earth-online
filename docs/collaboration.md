@@ -1,7 +1,3 @@
----
-description: EO-SYNC-20260930
----
-
 # 协作配置
 
 ## GitHub
@@ -16,17 +12,19 @@ description: EO-SYNC-20260930
 
 ## GitBook
 
-当前状态：仅准备了仓库侧配置，GitBook 尚未登录、未创建文档空间、未建立同步。
+- 文档空间：[人生 RPG 文档](https://app.gitbook.com/o/kVsp5UXcN6tOOU86MTqZ/s/PQA6juzGUAhFwiycpiCh/)
+- 站点工作区：[Earth Online Docs](https://app.gitbook.com/o/kVsp5UXcN6tOOU86MTqZ/sites/site_Rf9d2)
+- 访问状态：未发布，站点 Audience 为 Authenticated access。
+- 同步来源：`Kevinwu901113/earth-online` 的 `main` 分支。
+- 站点配置：根目录 `gitbook-docs.yaml` 映射至 `./`，再由 `.gitbook.yaml` 的 `root: ./docs/` 定位文档。
+- 套餐状态：GitBook 自动提供 14 天 Ultimate 试用；未购买套餐。试用后所需协作功能的可用性与费用尚未确认。
 
-后续设置：
+## 同步验证与使用
 
-1. 用户登录 GitBook；如出现服务条款、GitHub OAuth 或应用权限审批，由用户完成。
-2. 创建供项目使用的私有协作文档空间；确认实际套餐支持所需协作及同步功能。出现付费选项时先由用户决定。
-3. 在文档空间设置 Git Sync，选择 `Kevinwu901113/earth-online` 与 `main`。如需安装 GitBook GitHub App，仅授权此项目仓库。
-4. 仓库根目录包含 `.gitbook.yaml`，其中 `root: ./docs/` 指向文档目录。若界面要求配置文件所在目录，选择仓库根目录。
-5. 首次同步选择 **GitHub → GitBook**，导入现有文档。
-6. 确认首页与目录正常显示，再通过一处可回滚的文档修改验证双向同步，并记录验证结果。
+2026-09-30：首次以 GitHub → GitBook 导入成功，首页与协作配置均显示正常，GitBook 报告 Synced。随后在 GitBook 变更请求 #1 添加临时页面描述并合入，GitHub `main` 自动收到提交 `0969086`，确认 GitBook → GitHub 回写有效。本次后续提交移除临时描述并更新此说明，用于核对 GitHub → GitBook 的增量同步。
 
-GitBook 内共同编辑与 GitHub 同步是不同环节；在双向验证完成前，不将同步标记为已完成。邀请另一位协作者及任何公开发布均须另行明确授权。
+在 GitBook 中编辑变更请求，完成后合入主内容；在 GitHub 中维护代码及 `docs/` 文档。避免同时改动同一文档段落。站点发布与文档同步是独立操作，本项目未公开发布。
+
+协作者尚未邀请，两人共同编辑的实际验收需在用户明确授权邀请后进行。GitHub App 的安装范围由用户完成授权，本次同步仅选用 earth-online 仓库，未改动其他仓库或应用权限。
 
 参考：[GitBook 官方同步导入指南](https://gitbook.com/docs/guides/editing-and-publishing-documentation/import-or-migrate-your-content-to-gitbook-with-git-sync)。
