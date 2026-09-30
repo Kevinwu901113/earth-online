@@ -1,0 +1,12 @@
+$schema: https://api.gitbook.com/gitbook-docs.yaml
+site:
+  title: Earth Online Docs
+  structure:
+    - type: space
+      key: earth-online-docs
+      title: 人生 RPG 文档
+      path: docs
+      default: true
+      content:
+        directory: ./
+        language: zh
