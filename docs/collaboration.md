@@ -1,12 +1,16 @@
+---
+description: EO-SYNC-20260930
+---
+
 # 协作配置
 
 ## GitHub
 
-- 仓库：<https://github.com/Kevinwu901113/earth-online>
-- 所有者：`Kevinwu901113`
-- 可见性：私有（Private）
-- 文档分支：`main`
-- 文档目录：`docs/`
+* 仓库：[https://github.com/Kevinwu901113/earth-online](https://github.com/Kevinwu901113/earth-online)
+* 所有者：`Kevinwu901113`
+* 可见性：私有（Private）
+* 文档分支：`main`
+* 文档目录：`docs/`
 
 本次初始化未邀请成员、未发布公开站点、未购买套餐。
 
