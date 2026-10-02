@@ -1,0 +1,38 @@
+{
+  "name": "earth-online",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env --watch src/server.js",
+    "start": "node --env-file-if-exists=.env src/server.js",
+    "worker": "node --env-file-if-exists=.env src/worker.js",
+    "migrate": "node --env-file-if-exists=.env src/migrate.js",
+    "test": "node --test test/*.test.js",
+    "test:integration": "node --env-file-if-exists=.env --test test/integration/*.test.js",
+    "check": "node scripts/check.js",
+    "test:e2e": "playwright test",
+    "admin": "node --env-file-if-exists=.env scripts/admin.js"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-sdk-client": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
+    "@fastify/cookie": "11.1.2",
+    "@fastify/rate-limit": "11.2.0",
+    "@fastify/static": "10.1.5",
+    "fastify": "5.12.5",
+    "pg": "8.23.1",
+    "redis": "6.3.0",
+    "zod": "4.6.5"
+  },
+  "overrides": {
+    "fflate": "0.8.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "prettier": "3.9.9"
+  }
+}

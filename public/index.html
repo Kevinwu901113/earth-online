@@ -1,0 +1,141 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="light dark"><title>地球 Online</title><meta name="description" content="角色、任务日志、行动与记忆：让成长留下记录。"><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%228%22%20fill%3D%22%2320251f%22/%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%2210%22%20fill%3D%22none%22%20stroke%3D%22%23dcff69%22%20stroke-width%3D%222%22/%3E%3Cpath%20d%3D%22M6%2016h20M16%206c-7%206-7%2014%200%2020%207-6%207-14%200-20Z%22%20fill%3D%22none%22%20stroke%3D%22%23dcff69%22%20stroke-width%3D%221.5%22/%3E%3C/svg%3E"><style>html{color-scheme:light dark}body{margin:0;background:light-dark(#e7e8e0,#151815);min-height:100vh}.viz-dotted-background{background-image:radial-gradient(light-dark(#9da18b55,#636b5955) .7px,transparent .7px);background-size:18px 18px}button{cursor:pointer} @media(max-width:430px){#earth-journey{padding:0!important}#earth-journey .game{border-radius:0!important;width:100%!important;min-height:100svh}}</style><script src="assets/lucide.min.js"></script></head><body><div id="earth-journey" class="viz-dotted-background">
+ <div class="game">
+  <header><span class="brand">EARTH / ONLINE</span><span class="capsule">••• <span>◉</span></span></header>
+  <div class="date"><span>10<span class="slash">/</span>01</span><div>THURSDAY<br><b>自由行动日</b></div><button type="button" class="sound cursor-interaction" aria-label="启用交互音效"><i data-lucide="volume-x"></i></button></div>
+  <div class="main-home">
+  <section class="stage" aria-label="角色形象">
+   <div class="backword" aria-hidden="true">BE<br>YOU.</div><div class="orbit" aria-hidden="true"></div><span class="stage-label">PLAYER ONE<br>故事正在展开</span>
+   <button class="portrait cursor-interaction" type="button" aria-label="与角色互动"><canvas width="640" height="800" aria-label="穿深色夹克的原创角色插画"></canvas></button>
+   <div class="speech" aria-live="polite">今天，想把时间花在哪里？</div>
+   <div class="nameplate"><span>成长中的探索者</span><strong>未完待续的我</strong><small>CHARACTER FILE / 001</small></div>
+   <div class="level"><span>LV.</span><strong id="ep-level">07</strong></div>
+   <div class="tap-hint">轻触角色 · 心声</div>
+  </section>
+  <button type="button" class="profile-button cursor-interaction"><i data-lucide="pencil" aria-hidden="true"></i>角色档案</button>
+  <section class="stats"><div class="section-head"><h2>我的五维</h2><span>SOCIAL STATS</span><small>投入成长 · 非能力认证</small></div>
+   <div class="radar-wrap"><svg class="radar" viewBox="0 0 330 205" role="img" aria-label="五维属性：知识3、胆量2、灵巧2、温柔3、魅力2"><g class="grid"></g><polygon class="shape"/><g class="dots"></g></svg>
+    <button class="stat s0 cursor-interaction" data-stat="0" type="button"><b>知识</b><span>RANK 3 · 博识</span></button>
+    <button class="stat s1 cursor-interaction" data-stat="1" type="button"><b>胆量</b><span>RANK 2 · 无畏</span></button>
+    <button class="stat s2 cursor-interaction" data-stat="2" type="button"><b>灵巧</b><span>RANK 2 · 熟练</span></button>
+    <button class="stat s3 cursor-interaction" data-stat="3" type="button"><b>温柔</b><span>RANK 3 · 体贴</span></button>
+    <button class="stat s4 cursor-interaction" data-stat="4" type="button"><b>魅力</b><span>RANK 2 · 瞩目</span></button>
+   </div>
+  </section>
+  <button type="button" class="today cursor-interaction"><span><small>YOUR NEXT CHAPTER</small><b>今天的行动</b></span><span class="arrow">↗</span></button>
+  <div class="home-summary">你的故事，从一个选择开始</div>
+  </div>
+  <main class="journey-page" hidden></main>
+  <button type="button" class="guide-bar cursor-interaction"><i data-lucide="sparkles" aria-hidden="true"></i><span>和搭档一起想想下一步</span><span>↗</span></button>
+  <nav aria-label="主导航"><button type="button" class="active cursor-interaction" data-nav="self"><i data-lucide="user-round"></i>角色</button><button type="button" class="cursor-interaction" data-nav="quests"><i data-lucide="flag"></i>任务日志</button><button type="button" class="cursor-interaction" data-nav="actions"><i data-lucide="compass"></i>行动</button><button type="button" class="cursor-interaction" data-nav="memory"><i data-lucide="book-open"></i>记忆</button></nav>
+  <span class="storage-status">本次会话演示</span>
+  <div class="overlay" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="ep-sheet-title"><button type="button" class="close cursor-interaction" aria-label="关闭详情"><i data-lucide="x"></i></button><div class="sheet-content"></div></div></div>
+  <div class="reward" hidden aria-live="polite"><small>A LITTLE MORE YOU</small><strong>知识 +1</strong><span>每一次投入，都留下痕迹。</span></div>
+ </div>
+</div>
+<style>
+#earth-journey{padding:18px 8px;display:flex;justify-content:center;color-scheme:light dark}
+#earth-journey .game{--paper:light-dark(#f3efe5,#222522);--ink:light-dark(#20251f,#f3efe5);--sub:light-dark(#62665b,#b9bbae);--line:light-dark(#d3d3c5,#474b43);--pop:#dcff69;--popink:#20251f;position:relative;width:390px;max-width:100%;background:var(--paper);color:var(--ink);font-family:Arial,'PingFang SC','Microsoft Yahei',sans-serif;overflow:hidden;border-radius:26px;box-shadow:0 24px 64px #0002}
+#earth-journey *{box-sizing:border-box}#earth-journey button{font:inherit;color:inherit;border:0;background:none;-webkit-tap-highlight-color:transparent}#earth-journey button:active{transform:scale(.96)}#earth-journey button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}#earth-journey [hidden]{display:none!important}
+#earth-journey header{height:45px;padding:16px 22px 0;display:flex;justify-content:space-between;align-items:center}#earth-journey .brand{font-size:11px;letter-spacing:2px;font-weight:800}#earth-journey .capsule{font-size:15px;letter-spacing:3px;padding:2px 10px;border:1px solid var(--line);border-radius:20px}#earth-journey .capsule span{border-left:1px solid var(--line);padding-left:7px}
+#earth-journey .date{display:flex;gap:12px;padding:15px 22px 0;align-items:center}#earth-journey .date>span{font-size:42px;letter-spacing:-3px;font-weight:900}#earth-journey .slash{font-size:28px;font-weight:400;margin:0 3px}#earth-journey .date>div{font-size:10px;line-height:1.6;letter-spacing:1px}#earth-journey .date b{font-size:12px;letter-spacing:0}#earth-journey .sound{margin-left:auto;min-height:44px;min-width:44px;display:grid;place-items:center}#earth-journey .sound svg{width:17px;height:17px}
+#earth-journey .stage{height:345px;position:relative;margin-top:8px;isolation:isolate}#earth-journey .backword{position:absolute;top:10px;left:20px;font-size:105px;font-weight:900;line-height:.86;letter-spacing:-8px;color:var(--line);transform:rotate(-7deg);z-index:-1}#earth-journey .orbit{position:absolute;width:240px;height:240px;background:var(--pop);border-radius:50%;right:-32px;top:30px;z-index:-1}#earth-journey .orbit:after{content:'';position:absolute;inset:15px;border:1px solid #20251f30;border-radius:50%}#earth-journey .stage-label{position:absolute;left:23px;top:206px;font-size:10px;line-height:1.8;letter-spacing:1px;color:var(--sub)}#earth-journey .portrait{position:absolute;width:265px;height:330px;right:2px;bottom:6px;padding:0;transform-origin:bottom center;animation:ep-breathe 5s ease-in-out infinite}#earth-journey canvas{width:100%;height:100%;display:block;filter:drop-shadow(8px 10px 0 #20251f18)}#earth-journey .portrait.react{animation:ep-react .55s ease}#earth-journey .speech{position:absolute;top:4px;right:17px;max-width:245px;padding:12px 17px;background:var(--ink);color:var(--paper);font-size:12px;transform:rotate(2deg);clip-path:polygon(0 0,100% 0,100% 80%,91% 80%,85% 100%,84% 80%,0 80%);padding-bottom:21px;transition:opacity .2s}#earth-journey .nameplate{position:absolute;left:22px;bottom:26px;background:var(--ink);color:var(--paper);padding:12px 17px;transform:rotate(-4deg);box-shadow:5px 5px 0 var(--pop)}#earth-journey .nameplate span{display:block;font-size:11px;margin-bottom:4px;color:var(--pop)}#earth-journey .nameplate strong{font-size:23px;letter-spacing:1px}#earth-journey .nameplate small{display:block;font-size:9px;letter-spacing:2px;margin-top:6px}#earth-journey .level{position:absolute;right:23px;bottom:28px;background:var(--pop);color:var(--popink);padding:8px 12px;transform:rotate(7deg)}#earth-journey .level span{font-size:11px;font-weight:800;display:block}#earth-journey .level strong{font-size:35px;font-weight:900;line-height:1}#earth-journey .tap-hint{position:absolute;bottom:0;left:22px;font-size:10px;color:var(--sub);letter-spacing:1px}
+#earth-journey .stats{padding:18px 22px 0}#earth-journey .section-head{display:flex;align-items:center;gap:9px}#earth-journey h2{font-size:16px;margin:0;font-weight:800}#earth-journey .section-head>span{font-size:9px;letter-spacing:1px;color:var(--sub)}#earth-journey .section-head small{margin-left:auto;font-size:10px;color:var(--sub)}#earth-journey .radar-wrap{height:209px;position:relative;margin-top:3px}#earth-journey .radar{width:100%;height:205px}#earth-journey .grid{fill:none;stroke:var(--line);stroke-width:1}#earth-journey .shape{fill:#b7d94b55;stroke:var(--ink);stroke-width:1.8;transition:all .65s cubic-bezier(.2,.8,.2,1)}#earth-journey .dots{fill:var(--ink)}#earth-journey .stat{position:absolute;min-width:72px;min-height:44px;padding:5px;display:flex;flex-direction:column;text-align:center;justify-content:center;transition:background .2s}#earth-journey .stat b{font-size:13px;font-weight:800}#earth-journey .stat span{font-size:9px;margin-top:3px;color:var(--sub)}#earth-journey .stat.selected{background:var(--pop);color:var(--popink);transform:rotate(-3deg)}#earth-journey .stat.selected span{color:var(--popink)}#earth-journey .s0{top:0;left:calc(50% - 36px)}#earth-journey .s1{top:65px;right:-8px}#earth-journey .s2{bottom:6px;right:25px}#earth-journey .s3{bottom:6px;left:25px}#earth-journey .s4{top:65px;left:-8px}
+#earth-journey .today{margin:3px 22px 16px;width:calc(100% - 44px);background:var(--ink);color:var(--paper);padding:13px 17px;display:flex;justify-content:space-between;align-items:center;text-align:left;clip-path:polygon(2% 0,100% 0,98% 100%,0 100%)}#earth-journey .today small{font-size:9px;letter-spacing:2px;display:block;color:var(--pop);margin-bottom:5px}#earth-journey .today b{font-size:16px}#earth-journey .arrow{font-size:30px;color:var(--pop)}#earth-journey nav{display:flex;justify-content:space-around;border-top:1px solid var(--line);padding:10px 10px 17px}#earth-journey nav button{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:58px;min-height:45px;color:var(--sub);font-size:10px}#earth-journey nav svg{width:19px;height:19px}#earth-journey nav .active{color:var(--ink);font-weight:800}#earth-journey nav .active:after{content:'';width:18px;height:3px;background:var(--ink)}
+#earth-journey .overlay{position:absolute;inset:0;z-index:20;background:#10170c70;display:flex;align-items:flex-end}#earth-journey .sheet{width:100%;background:var(--paper);border-radius:24px 24px 0 0;padding:29px 24px 28px;position:relative;animation:ep-slide .3s ease-out;box-shadow:0 -15px 60px #0002}#earth-journey .close{position:absolute;right:12px;top:10px;min-width:44px;min-height:44px;display:grid;place-items:center}#earth-journey .close svg{width:20px}#earth-journey .eyebrow{font-size:10px;letter-spacing:2px;color:var(--sub)}#earth-journey .sheet h3{font-size:28px;margin:9px 0 14px;font-weight:850;letter-spacing:-1px}#earth-journey .sheet p{font-size:13px;line-height:1.8;margin:8px 0;color:var(--sub)}#earth-journey .sheet h4{font-size:12px;margin:21px 0 9px}#earth-journey .meter{height:5px;background:var(--line);margin:12px 0 7px}#earth-journey .meter>div{height:100%;background:var(--ink);transition:width .5s}#earth-journey .meterlabel{font-size:11px;color:var(--sub);display:flex;justify-content:space-between}#earth-journey .entry{border-top:1px solid var(--line);padding:13px 0;display:flex;justify-content:space-between;gap:12px;align-items:center}#earth-journey .entry b{font-size:14px;display:block}#earth-journey .entry small{font-size:11px;color:var(--sub);display:block;margin-top:5px}#earth-journey .entry button,#earth-journey .sheet-primary{background:var(--pop);color:var(--popink);padding:11px 14px;min-height:44px;font-size:12px;font-weight:700;white-space:nowrap}#earth-journey .sheet-primary{display:block;width:100%;margin-top:22px}#earth-journey .entry button:disabled{background:var(--line);color:var(--sub)}#earth-journey .reward{position:absolute;left:17px;right:17px;top:270px;padding:25px 20px;background:var(--pop);color:var(--popink);transform:rotate(-5deg);z-index:30;box-shadow:8px 8px 0 #20251f;animation:ep-reward .45s cubic-bezier(.2,1.5,.4,1)}#earth-journey .reward small{font-size:10px;letter-spacing:3px;display:block}#earth-journey .reward strong{font-size:36px;display:block;margin:8px 0}#earth-journey .reward span{font-size:12px}#earth-journey .particle{position:absolute;z-index:31;background:var(--pop);width:7px;height:7px;pointer-events:none;animation:ep-particle .8s ease-out forwards}
+@keyframes ep-breathe{50%{transform:translateY(-3px) rotate(.6deg)}}@keyframes ep-react{35%{transform:translateY(-9px) rotate(-3deg)}70%{transform:rotate(2deg)}}@keyframes ep-slide{from{transform:translateY(80px);opacity:.2}}@keyframes ep-reward{from{transform:rotate(-12deg) scale(.7);opacity:0}}@keyframes ep-particle{to{transform:translate(var(--dx),var(--dy)) rotate(120deg);opacity:0}}
+@media(max-width:355px){#earth-journey{padding:5px 0}#earth-journey .stage{height:315px}#earth-journey .portrait{width:240px;height:300px;right:-8px}#earth-journey .backword{font-size:94px}#earth-journey .stage-label{top:180px}#earth-journey .nameplate strong{font-size:20px}#earth-journey .level{right:17px}#earth-journey .stats{padding-left:16px;padding-right:16px}#earth-journey .s2{right:12px}#earth-journey .s3{left:12px}}
+@media(prefers-reduced-motion:reduce){#earth-journey *,#earth-journey *:before,#earth-journey *:after{animation:none!important;transition:none!important}}
+#earth-journey .game{min-height:820px}
+#earth-journey .main-home{animation:ep-page .3s ease-out}
+#earth-journey .profile-button{margin:12px 22px 0;min-height:36px;font-size:11px;display:flex;align-items:center;gap:7px;color:var(--sub)}
+#earth-journey .profile-button svg{width:14px;height:14px}
+#earth-journey .home-summary{padding:0 22px 12px;font-size:11px;color:var(--sub)}
+#earth-journey .guide-bar{margin:0 22px 14px;display:flex;align-items:center;gap:8px;font-size:12px;min-height:44px;border-top:1px solid var(--line);width:calc(100% - 44px);text-align:left}
+#earth-journey .guide-bar svg{width:17px;height:17px}#earth-journey .guide-bar span:last-child{margin-left:auto}
+#earth-journey .storage-status{display:block;text-align:center;font-size:10px;color:var(--sub);padding:0 12px 15px}
+#earth-journey .journey-page{padding:27px 22px 20px;min-height:646px;animation:ep-page .35s cubic-bezier(.2,.7,.2,1)}
+#earth-journey .page-title{margin-bottom:28px}#earth-journey .page-title h1{font-size:30px;line-height:1.25;letter-spacing:-1px;font-weight:850;margin:10px 0 12px;overflow-wrap:anywhere}
+#earth-journey .page-title p,#earth-journey .journey-page p{font-size:13px;line-height:1.8;color:var(--sub);margin:8px 0}
+#earth-journey .journey-page h2{font-size:17px;line-height:1.4;font-weight:750;overflow-wrap:anywhere}
+#earth-journey .eyebrow{font-size:11px;letter-spacing:1.3px}
+#earth-journey .solid,#earth-journey .outline,#earth-journey .quiet{min-height:44px;padding:12px 17px;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:7px;text-align:center;transition:transform .15s,background .2s;border-radius:2px}
+#earth-journey .solid{background:var(--ink);color:var(--paper);font-weight:700;box-shadow:3px 3px 0 var(--pop)}
+#earth-journey .outline{border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+#earth-journey .quiet{color:var(--sub)}#earth-journey .wide{width:100%;margin-top:12px}
+#earth-journey .button-row{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px;margin-top:10px}#earth-journey .button-row>button{flex:1;padding:12px 6px}
+#earth-journey .tiny-note{font-size:11px;color:var(--sub);line-height:1.7;margin:18px 0 0}
+#earth-journey .empty-scene{padding:30px 0 42px;position:relative}
+#earth-journey .empty-scene .big-type{font-size:65px;line-height:.9;letter-spacing:-4px;font-weight:900;color:var(--line);transform:rotate(-5deg);margin:5px 0 23px}
+#earth-journey .empty-scene p{font-size:15px;line-height:1.9}
+#earth-journey .empty-scene.short{padding:18px 0 26px}
+#earth-journey .quest-tile{display:block;width:100%;text-align:left;background:var(--ink);color:var(--paper);padding:21px 21px 15px;margin-bottom:18px;box-shadow:5px 5px 0 var(--pop);position:relative;overflow-wrap:anywhere}
+#earth-journey .quest-tag{color:var(--pop);font-size:11px;letter-spacing:1px}
+#earth-journey .quest-tile h2{font-size:24px;line-height:1.45;margin:17px 0 8px;color:var(--paper)}
+#earth-journey .quest-tile p{color:var(--paper);opacity:.8;font-size:12px}
+#earth-journey .quest-bottom{display:flex;align-items:center;justify-content:space-between;border-top:1px solid #ffffff30;padding-top:15px;margin-top:18px;font-size:11px}
+#earth-journey .quest-bottom svg{color:var(--pop)}
+#earth-journey .pick-grid{display:flex;flex-direction:column;gap:9px;margin-bottom:23px}
+#earth-journey .pick{display:flex;align-items:center;gap:12px;min-height:50px;padding:13px 15px;background:var(--paper);border:1px solid var(--line);text-align:left;font-size:13px}
+#earth-journey .pick.chosen{background:var(--pop);color:var(--popink);border-color:transparent}
+#earth-journey .pick svg{width:18px;height:18px;flex-shrink:0}
+#earth-journey form label{font-size:12px;color:var(--sub);display:block;margin:16px 0 7px}
+#earth-journey form input:not([type=checkbox]),#earth-journey form textarea,#earth-journey form select{display:block;width:100%;padding:12px 11px;min-height:45px;background:var(--paper);border:1px solid var(--line);color:var(--ink);font:inherit;font-size:16px;border-radius:3px;resize:vertical}
+#earth-journey form textarea{line-height:1.6}
+#earth-journey form input:focus-visible,#earth-journey form textarea:focus-visible,#earth-journey form select:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+#earth-journey .inline-error{font-size:12px;color:var(--ink);background:color-mix(in srgb,var(--pop) 18%,var(--paper));line-height:1.7;margin-top:12px;padding:10px 12px;overflow-wrap:anywhere}
+#earth-journey .inline-error:empty{display:none}
+#earth-journey .route-intro{padding:19px 18px;background:var(--pop);color:var(--popink);margin-bottom:24px}
+#earth-journey .route-intro h2{margin:0}#earth-journey .route-intro p{color:var(--popink);margin:8px 0 0;font-size:12px}
+#earth-journey .route-list{list-style:none;padding:0;margin:0 0 21px}
+#earth-journey .route-list li{display:flex;gap:16px;padding:0 0 27px;position:relative}
+#earth-journey .route-list li:not(:last-child):before{content:'';position:absolute;left:15px;top:33px;bottom:3px;width:1px;background:var(--line)}
+#earth-journey .route-number{flex-shrink:0;width:31px;height:31px;display:grid;place-items:center;background:var(--ink);color:var(--paper);font-size:12px;font-weight:800;transform:rotate(-5deg)}
+#earth-journey .route-list h2{margin:1px 0 7px;font-size:16px}#earth-journey .route-list p{margin:0;font-size:12px}#earth-journey .route-list small{display:block;font-size:11px;margin-top:7px;color:var(--sub);line-height:1.7}
+#earth-journey .route-list.compact li{padding-bottom:23px}#earth-journey .route-list.compact .route-number{background:var(--line);color:var(--sub)}#earth-journey .route-list .current .route-number{background:var(--pop);color:var(--popink)}
+#earth-journey .guide-note{display:flex;align-items:flex-start;gap:10px;padding:14px 0;border-top:1px solid var(--line)}
+#earth-journey .guide-note svg{width:18px;height:18px;flex-shrink:0;margin-top:6px}#earth-journey .guide-note p{font-size:12px;margin:0}
+#earth-journey .status-line{display:flex;justify-content:space-between;gap:10px;font-size:11px;color:var(--sub);margin-bottom:28px}
+#earth-journey .chapter-action{padding:18px;background:color-mix(in srgb,var(--pop) 15%,var(--paper));margin-bottom:12px}
+#earth-journey .chapter-action h2{margin:12px 0 7px}#earth-journey .chapter-action .solid{box-shadow:none}
+#earth-journey .day-caption{display:flex;gap:10px;justify-content:space-between;align-items:center;font-size:11px;padding-bottom:15px;border-bottom:1px solid var(--line);color:var(--sub)}
+#earth-journey .day-list{margin:20px 0 25px}
+#earth-journey .day-event{display:flex;align-items:flex-start;gap:15px;padding:18px 0;width:100%;text-align:left;border-bottom:1px solid var(--line)}
+#earth-journey .event-time{font-size:14px;font-weight:750;min-width:44px;letter-spacing:-.3px;padding-top:3px}
+#earth-journey .event-content{min-width:0;flex:1;padding-left:15px;border-left:2px solid var(--ink)}
+#earth-journey .event-content small{display:block;font-size:11px;color:var(--sub)}#earth-journey .event-content b{display:block;font-size:16px;margin:7px 0;line-height:1.6;overflow-wrap:anywhere}
+#earth-journey .event-content>span{font-size:11px;color:var(--sub)}#earth-journey .day-event>svg{width:16px;height:16px;margin-top:5px;flex-shrink:0}
+#earth-journey .day-event.done .event-content{border-left-color:#95b336}#earth-journey .day-event.done b{opacity:.7}
+#earth-journey .pool-choice{width:100%;display:flex;gap:13px;padding:18px 0;text-align:left;border-bottom:1px solid var(--line);align-items:flex-start}
+#earth-journey .pool-icon{width:36px;height:36px;flex-shrink:0;display:grid;place-items:center;background:var(--pop);color:var(--popink);transform:rotate(-5deg)}#earth-journey .pool-icon svg{width:17px;height:17px}
+#earth-journey .pool-choice>span:nth-child(2){flex:1;min-width:0}#earth-journey .pool-choice small{font-size:11px;color:var(--sub);display:block}#earth-journey .pool-choice b{font-size:15px;display:block;margin-top:6px;line-height:1.6;overflow-wrap:anywhere}#earth-journey .pool-choice p{font-size:11px;margin:5px 0 0}#earth-journey .pool-choice>svg{flex-shrink:0;width:17px;height:17px;margin-top:9px}
+#earth-journey .form-columns{display:grid;grid-template-columns:1fr 1fr;gap:13px}#earth-journey .form-columns>div{min-width:0}
+#earth-journey .check-line{display:flex;align-items:flex-start;gap:10px;color:var(--ink);line-height:1.8;min-height:44px;padding:8px 0;margin:15px 0 0}#earth-journey .check-line input{margin:4px 0 0;width:18px;height:18px;flex-shrink:0;accent-color:var(--popink)}
+#earth-journey .modal-title{font-size:16px!important;color:var(--ink)!important;overflow-wrap:anywhere}
+#earth-journey .sheet{padding-top:35px;padding-bottom:28px}
+#earth-journey .sheet h3{font-size:25px;line-height:1.35;padding-right:20px;overflow-wrap:anywhere}
+#earth-journey .record-result{background:color-mix(in srgb,var(--pop) 20%,var(--paper));padding:16px;margin:15px 0;font-size:14px}#earth-journey .record-result small{font-size:11px;color:var(--sub)}
+#earth-journey .review-big{font-size:54px;font-weight:850;letter-spacing:-3px;margin:12px 0}#earth-journey .review-big span{font-size:12px;color:var(--sub);letter-spacing:0;margin-left:14px;font-weight:400}
+#earth-journey .memory-list{padding:0 0 15px}
+#earth-journey .memory-entry{display:flex;gap:16px;position:relative;padding-bottom:28px}
+#earth-journey .memory-entry:not(:last-child):before{content:'';position:absolute;left:14px;top:35px;bottom:5px;width:1px;background:var(--line)}
+#earth-journey .memory-marker{width:30px;height:30px;display:grid;place-items:center;background:var(--pop);color:var(--popink);flex-shrink:0;transform:rotate(-5deg)}#earth-journey .memory-marker svg{width:15px;height:15px}
+#earth-journey .memory-entry>div:nth-child(2){min-width:0;flex:1}#earth-journey .memory-entry small{font-size:11px;color:var(--sub)}#earth-journey .memory-entry h2{font-size:16px;margin:8px 0}#earth-journey .memory-entry p{font-size:12px;overflow-wrap:anywhere;margin:6px 0}#earth-journey .memory-source{font-size:11px;line-height:1.8;color:var(--sub)}
+#earth-journey .reward{pointer-events:none}
+#earth-journey .stat span{font-size:11px}#earth-journey .stat{min-width:80px}#earth-journey .section-head>span{font-size:10px}#earth-journey .nameplate small{font-size:10px}
+@keyframes ep-page{from{transform:translateY(9px);opacity:.4}to{transform:translateY(0);opacity:1}}
+@media(max-width:355px){#earth-journey .journey-page{padding:24px 17px 18px}#earth-journey .empty-scene .big-type{font-size:54px}#earth-journey .quest-tile h2{font-size:21px}#earth-journey .form-columns{grid-template-columns:1fr}.overlay .sheet{padding-left:18px;padding-right:18px}#earth-journey .stat span{font-size:10px}}
+
+@font-face{font-family:EarthNoto;src:url('assets/chinese.woff2') format('woff2');font-weight:400;font-display:swap}
+#earth-journey .game{--panel:#20251f;--paneltext:#f3efe5;font-family:Arial,EarthNoto,'PingFang SC','Microsoft Yahei',sans-serif}
+#earth-journey .nameplate,#earth-journey .today,#earth-journey .quest-tile{background:var(--panel);color:var(--paneltext)}
+#earth-journey .quest-tile h2,#earth-journey .quest-tile p{color:var(--paneltext)}
+#earth-journey .stage{height:310px}#earth-journey .portrait{height:300px;width:240px;right:8px}
+#earth-journey .stage-label{top:145px}#earth-journey .backword{font-size:95px}
+#earth-journey .guide-bar{margin-bottom:8px}#earth-journey .profile-button{margin-top:9px;min-height:30px}
+#earth-journey .tiny-edit{display:inline-block;margin-top:8px;padding:8px 0;min-height:36px;color:var(--sub);font-size:11px}
+#earth-journey .game:has(.journey-page:not([hidden])) .date{padding-top:10px}
+@media(max-width:355px){#earth-journey .stage{height:290px}#earth-journey .portrait{width:225px;height:281px;right:-4px}#earth-journey .stage-label{top:140px}}
+#earth-journey .nameplate{width:min(65%,250px)}
+#earth-journey .nameplate strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+<link rel="stylesheet" href="app.css"><script src="character.js"></script><script src="app.js"></script></body></html>

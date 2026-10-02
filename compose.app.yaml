@@ -1,0 +1,38 @@
+# Combine with compose.yaml. Supply a private .env containing production credentials.
+services:
+  migrate:
+    build: .
+    command: ["node", "src/migrate.js"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://earth:${POSTGRES_PASSWORD:-local-development-only}@postgres:5432/earth_online
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    restart: "no"
+  api:
+    build: .
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0
+      DATABASE_URL: postgres://earth:${POSTGRES_PASSWORD:-local-development-only}@postgres:5432/earth_online
+      REDIS_URL: redis://redis:6379
+    ports: ["127.0.0.1:3000:3000"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 30s
+  worker:
+    build: .
+    command: ["node", "src/worker.js"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://earth:${POSTGRES_PASSWORD:-local-development-only}@postgres:5432/earth_online
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 30s

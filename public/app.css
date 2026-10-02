@@ -1,0 +1,119 @@
+#earth-journey .entry {
+  margin: 12px 0;
+}
+#earth-journey label {
+  display: block;
+  margin: 12px 0;
+  font-size: 13px;
+}
+#earth-journey input,
+#earth-journey textarea,
+#earth-journey select {
+  box-sizing: border-box;
+  max-width: 100%;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  margin-top: 5px;
+}
+#earth-journey input[type="checkbox"] {
+  width: auto;
+  margin-right: 8px;
+}
+#earth-journey textarea {
+  min-height: 100px;
+}
+#earth-journey .row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+#earth-journey .row button {
+  flex: 1;
+  min-width: 70px;
+}
+#earth-journey .prose {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  line-height: 1.8;
+}
+#earth-journey .notice {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 85vw;
+  z-index: 10000;
+  background: #20251f;
+  color: #f3efe5;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+#earth-journey .entry small {
+  color: var(--sub);
+}
+#earth-journey .job {
+  border-bottom: 1px solid var(--line);
+  padding: 10px 0;
+  font-size: 13px;
+}
+#earth-journey .sheet button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+#earth-journey .sheet {
+  max-height: 88svh;
+  overflow: auto;
+}
+#earth-journey .sheet-content pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+#earth-journey .status {
+  color: var(--sub);
+  font-size: 12px;
+}
+#earth-journey .entry a {
+  color: inherit;
+  text-decoration: underline;
+}
+#earth-journey .solid,
+#earth-journey .outline,
+#earth-journey .quiet {
+  min-height: 44px;
+}
+#earth-journey .source {
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+#earth-journey .entry {
+  display: block;
+}
+#earth-journey .quest-tile .outline {
+  background: var(--pop);
+  color: var(--popink);
+}
+#earth-journey .overlay {
+  position: fixed;
+  max-width: 430px;
+  margin: auto;
+  align-items: flex-end;
+}
+#earth-journey .sheet-content h3 {
+  letter-spacing: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #earth-journey * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

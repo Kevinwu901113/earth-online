@@ -1,6 +1,6 @@
 # 人生 RPG 文档
 
-此处是项目协作文档入口，目前仅完成基础结构。
+此处是项目协作与实现文档入口。已实现版本见 [后端架构](backend-architecture.md)、[API](api.md)、[运行手册](operations.md) 和 [验收范围](acceptance.md)。
 
 ## 需求状态
 
