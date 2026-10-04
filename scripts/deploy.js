@@ -6,6 +6,7 @@ import { resolve, dirname, join } from "node:path";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { parseEnv } from "node:util";
+import { createOriginPolicy } from "../src/request-origin.js";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 process.chdir(root);
@@ -66,6 +67,7 @@ async function settings() {
     }
   }
   const prod = production || cfg.NODE_ENV === "production";
+  createOriginPolicy(cfg.APP_ORIGIN, cfg.APP_PROXY_ORIGINS);
   if (!native && Number(cfg.PORT) !== 3000)
     throw new Error(
       "Compose uses PORT=3000 internally. Change the gateway/host mapping for a different external port.",

@@ -19,6 +19,11 @@ async function fixture(t) {
   const root = await mkdtemp(join(tmpdir(), "earth deployment "));
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(join(root, "scripts"));
+  await mkdir(join(root, "src"));
+  await copyFile(
+    new URL("../src/request-origin.js", import.meta.url),
+    join(root, "src", "request-origin.js"),
+  );
   await copyFile(
     new URL("../scripts/deploy.js", import.meta.url),
     join(root, "scripts", "deploy.js"),
@@ -114,7 +119,6 @@ test("native service installation handles project paths with spaces and supervis
   if (process.platform !== "linux") return t.skip("Linux user services");
   const { root, cli } = await fixture(t);
   cli(["init", "--production", "--domain=earth.example.com"]);
-  await mkdir(join(root, "src"));
   // No real database is mutated in this lifecycle test.
   await writeFile(
     join(root, "src", "migrate.js"),

@@ -13,7 +13,11 @@ async function walk(dir) {
   }
 }
 for (const d of ["src", "dsh", "scripts", "test"]) await walk(d);
-for (const p of ["public/app.js", "public/character.js"]) {
+for (const p of [
+  "public/app.js",
+  "public/character.js",
+  "public/api-client.js",
+]) {
   const r = spawnSync(process.execPath, ["--check", p], { stdio: "inherit" });
   if (r.status) process.exit(r.status);
 }

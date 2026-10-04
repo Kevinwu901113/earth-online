@@ -81,27 +81,7 @@
     root.append(n);
     setTimeout(() => n.remove(), 6000);
   }
-  async function api(path, { body, key, ...opts } = {}) {
-    const headers = { ...opts.headers };
-    if (body !== undefined) {
-      headers["Content-Type"] = "application/json";
-      headers["x-earth-client"] = "web-v1";
-    }
-    if (key) headers["Idempotency-Key"] = key;
-    const r = await fetch("/api" + path, {
-      ...opts,
-      headers,
-      credentials: "same-origin",
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    const data = await r.json();
-    if (!r.ok) {
-      const e = new Error(data.error ?? "请求失败");
-      e.status = r.status;
-      throw e;
-    }
-    return data;
-  }
+  const api = window.earthApi.request;
   async function refresh() {
     if (refreshing) return refreshing;
     refreshing = (async () => {
