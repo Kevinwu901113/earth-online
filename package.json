@@ -15,7 +15,8 @@
     "test:integration": "node --env-file-if-exists=.env --test test/integration/*.test.js",
     "check": "node scripts/check.js",
     "test:e2e": "playwright test",
-    "admin": "node --env-file-if-exists=.env scripts/admin.js"
+    "admin": "node --env-file-if-exists=.env scripts/admin.js",
+    "deploy": "node scripts/deploy.js"
   },
   "dependencies": {
     "@deepseek-ai/dsh-sdk-client": "0.2.0-rc.2",

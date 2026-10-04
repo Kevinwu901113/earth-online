@@ -2,6 +2,8 @@
 
 ## 部署
 
+整套 Docker HTTPS 部署及更轻量的原生 Node/systemd 部署，先按 [部署指南](deployment.md) 操作。以下是运行约束与运营说明。
+
 1. 固定 Node 24+，`npm ci --ignore-scripts` 安装锁定依赖；应用不用 DSH 的 shell/native 插件。
 2. 创建独立 PostgreSQL 和 Redis。`POSTGRES_PASSWORD` 使用随机十六进制字符串，避免未编码的 URL 特殊字符。数据库持久卷须备份。
 3. 配置 `.env`：DATABASE_URL、REDIS_URL、APP_ORIGIN、DEEPSEEK_API_KEY；模型默认 deepseek-v4-flash，DeepSeek Messages 端点默认 `https://api.deepseek.com/anthropic`。可选 EXA_API_KEY。
@@ -24,7 +26,15 @@ DSH 运行数据在 `DATA_DIR/agent/<user>/<job>`，正常结束自动删除。�
 准备运营审核后的 JSON 文件：
 
 ```json
-{"id":"text-introduction","version":1,"name":"英文文字介绍","scope":"仅文字，不代表口语能力","criteria":"需要运营填写可观察、可复核的完整标准","reviewedBy":"运营姓名","sourceUrl":"https://实际来源"}
+{
+  "id": "text-introduction",
+  "version": 1,
+  "name": "英文文字介绍",
+  "scope": "仅文字，不代表口语能力",
+  "criteria": "需要运营填写可观察、可复核的完整标准",
+  "reviewedBy": "运营姓名",
+  "sourceUrl": "https://实际来源"
+}
 ```
 
 ```sh
@@ -40,7 +50,14 @@ npm run admin -- publish-standard /path/to/reviewed-standard.json
 用户完成阶段后如目标需要现实结果，先在目标详情提交证据，状态仍为 awaiting_external。运营核实独立来源后准备：
 
 ```json
-{"userId":"UUID","goalId":"UUID","reviewedBy":"审核者","evidenceReference":"独立核实依据或工单号","note":"核实过程与结论","accepted":true}
+{
+  "userId": "UUID",
+  "goalId": "UUID",
+  "reviewedBy": "审核者",
+  "evidenceReference": "独立核实依据或工单号",
+  "note": "核实过程与结论",
+  "accepted": true
+}
 ```
 
 ```sh
