@@ -1,0 +1,5 @@
+# Set the domain to the same host as APP_ORIGIN. Install into /etc/caddy/Caddyfile.
+earth.example.com {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:3000
+}

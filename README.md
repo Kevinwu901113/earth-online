@@ -2,30 +2,50 @@
 
 用真实行动积累成长记录，用成果证据检验目标。前端沿用 2026-10-01 发布的最新角色界面，后端使用 **DSH + PostgreSQL + Redis**。
 
-## 本地启动
+## 快速部署
 
-需要 Node.js 24+、Docker Compose，以及 DeepSeek API 凭据（账号、记录、排程等功能不依赖模型；规划、评估、复盘与管家需要）。
+前端和 API 共用一个地址，worker 独立运行。默认整套 Docker 部署，也支持无 Docker 的 Node.js + systemd；无需绑定 Render。
+
+**只安装 Docker Engine 和 Compose v2 的本机启动：**
+
+```sh
+sh scripts/deploy.sh init
+# 编辑 .env，填写 DEEPSEEK_API_KEY；EXA_API_KEY 可选。
+sh scripts/deploy.sh check
+sh scripts/deploy.sh up
+```
+
+打开 http://localhost:3000。账号、记录、排程不依赖模型；规划、评估、复盘与管家需要模型凭据。init 随机生成数据库密码，不会覆盖已有 .env。
+
+**服务器一并启动 HTTPS：**
+
+```sh
+sh scripts/deploy.sh init --production --domain=earth.example.com
+# 编辑 .env：模型凭据；需要注册时设置 REGISTRATION_ENABLED=true。
+sh scripts/deploy.sh check --production
+sh scripts/deploy.sh up --production
+```
+
+域名指向服务器，TCP 80/443 可访问，Caddy 自动管理 HTTPS。仅网关对外，数据库和 Redis 不暴露公网。已有 .env、旧数据卷或已有网关请先按指南配置，不要重新初始化/删除数据。
+
+**更轻量的原生方式：**已有 Node.js 24+、PostgreSQL 和 Redis 时，安装依赖、填写连接地址、迁移后直接运行 API 和 worker。Linux 可用 `npm run deploy -- native-install --native` 安装 systemd 用户服务，不要求 Docker 或 PM2。
+
+完整步骤、Windows 入口、更新/备份/恢复及验收见 [部署指南](docs/deployment.md)。[运行手册](docs/operations.md) 说明运营、限流和数据边界。
+
+## 本地开发
 
 ```sh
 npm ci --ignore-scripts
-cp .env.example .env
-# 在本机编辑 .env，填写 DEEPSEEK_API_KEY；不要提交该文件。
-docker compose up -d --wait
+npm run deploy -- init
+# 编辑 .env，填写模型凭据。
+docker compose --project-name earth-online up -d --wait
 npm run migrate
 npm start
 # 另一个终端：
 npm run worker
 ```
 
-打开 http://localhost:3000 注册账号。API 与前端同源；APP_ORIGIN 必须与地址栏一致。`EXA_API_KEY` 可选：未配置时规划明确缺少检索来源，不生成假引用。
-
-也可以用容器运行 API、worker 和迁移：
-
-```sh
-docker compose -f compose.yaml -f compose.app.yaml up --build -d
-```
-
-本地 Compose 默认密码仅用于本机开发。对外部署前按 [运行手册](docs/operations.md) 配置 HTTPS、独立凭据、备份和注册开关。
+API 与前端同源；APP_ORIGIN 必须与地址栏一致。`EXA_API_KEY` 未配置时规划明确缺少检索来源，不生成假引用。
 
 ## 已实现
 
@@ -44,8 +64,9 @@ docker compose -f compose.yaml -f compose.app.yaml up --build -d
 ```sh
 npm run check
 npm test
-docker compose exec -T postgres createdb -U earth earth_online_test
-export TEST_DATABASE_URL=postgres://earth:local-development-only@127.0.0.1:55432/earth_online_test
+docker compose --project-name earth-online exec -T postgres createdb -U earth earth_online_test
+# 将 YOUR_POSTGRES_PASSWORD 替换为 .env 的 POSTGRES_PASSWORD。
+export TEST_DATABASE_URL=postgres://earth:YOUR_POSTGRES_PASSWORD@127.0.0.1:55432/earth_online_test
 export TEST_REDIS_URL=redis://127.0.0.1:56379
 npm run test:integration
 npx playwright install chromium
@@ -58,6 +79,7 @@ npm run test:e2e
 
 - [架构与数据边界](docs/backend-architecture.md)
 - [API 与命令](docs/api.md)
+- [部署、HTTPS、更新与备份](docs/deployment.md)
 - [运行、审核与恢复](docs/operations.md)
 - [验收范围与需求对应](docs/acceptance.md)
 - [原有协作文档](docs/README.md)
