@@ -9,7 +9,12 @@ import { Auth } from "./auth.js";
 import { Repository } from "./repository.js";
 import { credentialsSchema, envelopeSchema, uuid } from "./schemas.js";
 import { DomainError } from "./domain.js";
+import { createOriginPolicy, browserOriginAllowed } from "./request-origin.js";
 export async function buildApp({ pool, cache, config, logger = false }) {
+  const originPolicy = createOriginPolicy(
+    config.APP_ORIGIN,
+    config.APP_PROXY_ORIGINS,
+  );
   const app = Fastify({ logger, bodyLimit: 100000, trustProxy: false });
   const auth = new Auth(pool, config.SESSION_DAYS),
     repo = new Repository(pool, cache);
@@ -17,12 +22,10 @@ export async function buildApp({ pool, cache, config, logger = false }) {
   await app.register(rateLimit, { max: 120, timeWindow: "1 minute" });
   app.setErrorHandler((e, req, reply) => {
     if (e instanceof ZodError)
-      return reply
-        .code(400)
-        .send({
-          error: "输入格式无效",
-          details: e.issues.map((i) => ({ path: i.path, message: i.message })),
-        });
+      return reply.code(400).send({
+        error: "输入格式无效",
+        details: e.issues.map((i) => ({ path: i.path, message: i.message })),
+      });
     const code = e.statusCode ?? 500;
     if (code >= 500)
       req.log.error({ code: e.code, name: e.name }, "Request failed");
@@ -42,7 +45,7 @@ export async function buildApp({ pool, cache, config, logger = false }) {
     if (req.url.startsWith("/api/")) {
       reply.header("Cache-Control", "no-store");
       if (!["GET", "HEAD", "OPTIONS"].includes(req.method)) {
-        if (req.headers.origin !== config.APP_ORIGIN)
+        if (!browserOriginAllowed(req.headers, originPolicy))
           throw new DomainError("请求来源不匹配", 403);
         if (req.headers["x-earth-client"] !== "web-v1")
           throw new DomainError("缺少请求校验标记", 403);

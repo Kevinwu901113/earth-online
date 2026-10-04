@@ -117,3 +117,22 @@ docker compose --project-name earth-online --env-file .env -f compose.production
 | 数据库认证失败           | 现有数据卷密码与 .env 是否一致；不要删除卷解决                  |
 
 业务审核、代理限流、账号删除、DSH 数据清理等见 [运行与运营](operations.md)。服务运行/单次测试通过不代表模型质量与产品效果已验证。
+
+## 6. 代理改写 Origin 的兼容配置
+
+本机正常部署保持 `APP_PROXY_ORIGINS` 为空。浏览器地址必须与 `APP_ORIGIN` 一致。仓库无法解除浏览器操作工具或组织的导航限制；`ERR_BLOCKED_BY_CLIENT` 且无后端请求，不能靠修改 API 解决。
+
+若一个已允许访问的 HTTPS 预览代理将 `Origin` 改成了已观察到的 loopback 地址，可显式填写别名。例如本次 Codespaces 记录收到的是 **HTTPS** localhost：
+
+```dotenv
+APP_ORIGIN=https://sturdy-lamp-jq66rpvg79wfpgvg-3000.app.github.dev
+APP_PROXY_ORIGINS=https://localhost:3000
+```
+
+用当前真实地址替换示例；修改配置后重启 API 和 worker。不得只将公网 `APP_ORIGIN` 改成 localhost。别名精确匹配协议和端口，只允许 localhost、127.0.0.1 或 IPv6 loopback 的 HTTP(S) origin，无通配符、路径、凭据或任意公网别名。
+
+兼容分支要求同时满足：`Origin` 精确命中配置的别名、`Referer` 的完整 origin 等于配置的公网 `APP_ORIGIN`、`Sec-Fetch-Site` 为 `same-origin`。仍要求 JSON 和 `x-earth-client: web-v1`，会话仍使用原有 Cookie 设置。不根据 `Host` 或 `X-Forwarded-*` 自动授予信任。
+
+如果代理丢弃或改写这些必要信号，请求继续被拒绝；配置别名不保证任何具体平台都能通过，也不保证该平台访问策略允许导航。已验证的是重写场景下的应用校验及跨站拒绝，实际预览入口仍需实测。
+
+前端现在区分网络错误、读取中断、空响应、HTML/异常响应和正常 JSON API 错误。遇到网关页面或空响应时会保留表单并给出可重试提示，不将 JSON 解析异常当成业务错误，也不展示网关返回的原始正文。
