@@ -122,6 +122,7 @@ function compose(env, prod, args, options = {}) {
 }
 async function backup(env, cfg, prod) {
   await mkdir("backups", { recursive: true, mode: 0o700 });
+  await chmod("backups", 0o700);
   const path = resolve(
     "backups",
     `earth-${new Date().toISOString().replace(/[:.]/g, "-")}-${randomBytes(3).toString("hex")}.dump`,
@@ -173,7 +174,7 @@ function unit(role) {
   // systemd has its own quoting and percent expansion rules.
   const quote = (s) =>
     `"${s.replaceAll("\\", "\\\\").replaceAll('"', '\\"').replaceAll("%", "%%")}"`;
-  return `[Unit]\nDescription=Earth Online ${role}\nAfter=network-online.target\n\n[Service]\nType=simple\nWorkingDirectory=${quote(root)}\nExecStart=${quote(process.execPath)} --env-file=${quote(join(root, ".env"))} ${quote(join(root, "src", role === "api" ? "server.js" : "worker.js"))}\nRestart=on-failure\nRestartSec=5\nTimeoutStopSec=30\nUMask=0077\nNoNewPrivileges=true\n\n[Install]\nWantedBy=default.target\n`;
+  return `[Unit]\nDescription=Earth Online ${role}\nAfter=network-online.target\n\n[Service]\nType=simple\nWorkingDirectory=${root.replaceAll("%", "%%")}\nExecStart=${quote(process.execPath)} --env-file=${quote(join(root, ".env"))} ${quote(join(root, "src", role === "api" ? "server.js" : "worker.js"))}\nRestart=on-failure\nRestartSec=5\nTimeoutStopSec=30\nUMask=0077\nNoNewPrivileges=true\n\n[Install]\nWantedBy=default.target\n`;
 }
 async function main() {
   for (const flag of flags)

@@ -140,10 +140,17 @@ test("native service installation handles project paths with spaces and supervis
       join(home, ".config/systemd/user", `earth-${role}.service`),
       "utf8",
     );
-    assert.ok(text.includes(`WorkingDirectory="${root}"`));
+    assert.ok(text.includes(`WorkingDirectory=${root}`));
     assert.ok(text.includes(`--env-file="${root}/.env"`));
     assert.match(text, /Restart=on-failure/);
     assert.match(text, /UMask=0077/);
     assert.ok(text.includes(role === "api" ? "server.js" : "worker.js"));
+    const verified = spawnSync(
+      "systemd-analyze",
+      ["verify", join(home, ".config/systemd/user", `earth-${role}.service`)],
+      { encoding: "utf8" },
+    );
+    if (verified.error?.code !== "ENOENT")
+      assert.equal(verified.status, 0, verified.stderr);
   }
 });
