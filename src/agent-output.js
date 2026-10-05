@@ -5,6 +5,9 @@ const messages = Object.freeze({
   model_unconfigured: "模型服务尚未配置；内容已保存，请配置后重试。",
   model_timeout: "模型执行超时；内容已保存，可重试。",
   model_execution_failed: "模型调用未完成；内容已保存，请稍后重试。",
+  model_output_limit:
+    "模型达到本次生成上限，尚未生成完整结果；内容已保存，可重试。",
+  model_output_empty: "模型未返回可用结果；内容已保存，可重试。",
   output_json_invalid:
     "模型返回的内容不是完整 JSON，未生成可用结果；内容已保存，可重试。",
   output_schema_invalid:
@@ -89,15 +92,85 @@ export function validateOutput(kind, value) {
   });
 }
 
-export function parseOutput(raw) {
+export function parseOutput(raw, details = {}) {
+  let s = typeof raw === "string" ? raw.trim() : "";
+  if (s.startsWith("```"))
+    s = s.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
   try {
-    let s = raw.trim();
-    if (s.startsWith("```"))
-      s = s.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
     return JSON.parse(s);
-  } catch {
-    throw new AgentError("output_json_invalid", { phase: "parse" });
+  } catch (error) {
+    // V8 may include excerpts of private output in its message. Keep only
+    // numeric locations and a fixed category, never the exception message.
+    const message = error.message;
+    const offset = message.match(
+      / at position (\d+)(?: \(line \d+ column \d+\))?$/,
+    )?.[1];
+    const category = /^(?:Unterminated string|Unexpected end)/.test(message)
+      ? "unexpected_end"
+      : /^Bad control character/.test(message)
+        ? "unescaped_control"
+        : /^Bad (?:escaped character|Unicode escape)/.test(message)
+          ? "invalid_escape"
+          : "invalid_syntax";
+    throw new AgentError("output_json_invalid", {
+      ...details,
+      phase: "parse",
+      json: {
+        category,
+        characters: s.length,
+        ...(offset === undefined ? {} : { offset: Number(offset) }),
+      },
+    });
   }
+}
+
+// SDK resolution means the session became idle, not that the model completed.
+// Check the documented event envelope before admitting any text to settlement.
+export function outputFromRun(kind, result, generation = {}) {
+  const events = result.events ?? [];
+  const ends = events.filter((e) => e.type === "turn/end");
+  const last = events.findLast((e) => e.type === "assistant/message");
+  const unfinished = ends.find((e) => e.data?.reason?.kind !== "completed");
+  const reason = (unfinished ?? ends.at(-1))?.data?.reason?.kind;
+  const knownReasons = [
+    "completed",
+    "max-tokens",
+    "error",
+    "aborted",
+    "blocked",
+  ];
+  const execution = {
+    endReason: knownReasons.includes(reason) ? reason : "unknown",
+    outputCharacters:
+      typeof result.finalResponse === "string"
+        ? result.finalResponse.length
+        : 0,
+    reasoningCharacters: (last?.data?.message?.content ?? [])
+      .filter((b) => b.type === "reasoning" && typeof b.text === "string")
+      .reduce((sum, b) => sum + b.text.length, 0),
+  };
+  const tokens = last?.data?.usage?.outputTokens;
+  if (Number.isSafeInteger(tokens) && tokens >= 0)
+    execution.outputTokens = tokens;
+  if (Number.isSafeInteger(generation.maxTokens) && generation.maxTokens > 0)
+    execution.maxTokens = generation.maxTokens;
+  if (["off", "low", "high", "max"].includes(generation.reasoningEffort))
+    execution.reasoningEffort = generation.reasoningEffort;
+  const details = { contract: `${kind}-v1`, execution };
+  if (reason !== "completed")
+    throw new AgentError(
+      reason === "max-tokens" ? "model_output_limit" : "model_execution_failed",
+      {
+        ...details,
+        phase: "completion",
+      },
+    );
+  if (!execution.outputCharacters || !result.finalResponse.trim())
+    throw new AgentError("model_output_empty", {
+      ...details,
+      phase: "completion",
+    });
+  return validateOutput(kind, parseOutput(result.finalResponse, details));
 }
 
 export function failureFor(error) {

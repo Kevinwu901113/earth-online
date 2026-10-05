@@ -21,7 +21,7 @@
 
 `GET /api/state` 中每个目标包含派生字段 `planning`：当前规划有 `{jobId,status,error,code,minutes}`，没有适用于当前路线/阶段的任务则为 null。任务状态变化不一定改变业务 `version`，客户端须比较返回状态，不能只用版本判断是否刷新。路线确认后以已确认路线为准；规划失败不改变目标完成状态。
 
-`GET /api/jobs/:id` 的 `failure` 保存安全诊断：`code,message`，可选 `phase,contract,issues,issueCount`。结构校验失败示例：`{path:["stages",0,"steps"],code:"invalid_type",expected:"string",received:"array",length:3}`。仅任务所属账号可读，不返回模型失败回复原文。旧任务可能没有 failure；其既有 error 仍保留，不能据此反推具体字段。
+`GET /api/jobs/:id` 的 `failure` 保存安全诊断：`code,message`，可选 `phase,contract,issues,issueCount,execution,json`。结构校验失败示例：`{path:["stages",0,"steps"],code:"invalid_type",expected:"string",received:"array",length:3}`。`execution` 仅包含白名单结束原因、输出字符数、推理字符数、配置的 token 上限/推理强度和可用时的输出 token 数；`json` 仅包含语法类别、字符数和可用时的数字偏移量。结束原因为 `max-tokens` 时返回 `model_output_limit`，正常结束但无结果为 `model_output_empty`，正常结束后 JSON 无效才返回 `output_json_invalid`。仅任务所属账号可读，不返回模型失败回复原文、推理正文或异常消息。旧任务可能没有 failure 或新增诊断；不能据此反推当时的结束原因和具体字段。
 
 ## 命令目录
 

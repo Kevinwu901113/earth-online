@@ -332,6 +332,9 @@
     const g = state.goals.find((g) => g.id === id);
     if (!g) return;
     const stage = g.stages[g.stage];
+    const stagesCompleted = ["completed", "awaiting_external"].includes(
+      g.status,
+    );
     open(
       heading("QUEST", esc(g.title)) +
         `<p class="status">${label(g.status)} · 每天 ${g.minutes} 分钟 · 路线版本 ${g.revision}</p><h4>完成条件</h4>${prose(g.criterion)}<h4>起点</h4>${prose(g.base)}` +
@@ -342,7 +345,7 @@
         g.stages
           .map(
             (s, i) =>
-              `<div class="entry"><small>${i < g.stage ? "已通过" : i === g.stage ? "当前阶段" : "后续阶段"}</small><h4>${esc(s.name)}</h4>${prose(s.criterion)}${i === g.stage ? prose(s.steps) + `<p>挑战：${esc(s.challenge)}</p>` : ""}</div>`,
+              `<div class="entry"><small>${i < g.stage || stagesCompleted ? "已通过" : i === g.stage ? "当前阶段" : "后续阶段"}</small><h4>${esc(s.name)}</h4>${prose(s.criterion)}${i === g.stage && !stagesCompleted ? prose(s.steps) + `<p>挑战：${esc(s.challenge)}</p>` : ""}</div>`,
           )
           .join("") +
         sources(g.sources ?? []) +
@@ -352,7 +355,7 @@
           .reverse()
           .map(
             (s) =>
-              `<div class="entry"><small>${s.kind === "challenge" ? "挑战" : "练习"} · ${label(s.status)}</small>${prose(s.content)}${s.assessment ? `<b>${label(s.assessment.outcome)}</b>${prose(s.assessment.feedback)}` : ""}${s.status === "error" ? btn("重试评估", "retrySubmission", s.id) : ""}</div>`,
+              `<div class="entry"><small>${s.kind === "challenge" ? "挑战" : "练习"} · ${label(s.status)}</small>${prose(s.content)}${s.assessment ? `<b>${label(s.assessment.outcome)}</b>${prose(s.assessment.feedback)}` : ""}${s.status === "error" ? `<div class="assessment-error" role="status">${prose(s.error || "评估未完成；内容已保存，可重试。")}</div>` + btn("重试评估", "retrySubmission", s.id) : ""}</div>`,
           )
           .join("") +
         btn("后台处理进度", "jobs"),
@@ -654,7 +657,6 @@
       ),
     retrySubmission: async (id) => {
       await send({ type: "submission.retry", id });
-      close();
       toast("已重新排队");
     },
     pausePlan: async (id) => {

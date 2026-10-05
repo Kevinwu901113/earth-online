@@ -1,0 +1,108 @@
+{
+  "baseCommit": "0ccf7758505fdab32a6413959ceac4611add75d1",
+  "runtimeSources": [
+    "src/agent.js",
+    "src/agent-output.js",
+    "src/config.js",
+    "src/repository.js",
+    "public/app.js"
+  ],
+  "runtimeSourceSha256": "4023af67ba1a711ce9b1d19a3f388ead0077002b1f178a6156c7f1d69b11d208",
+  "tests": {
+    "unitPassed": 29,
+    "unitSkipped": 1,
+    "integrationPassed": 10,
+    "browserPassed": 4,
+    "syntax": "passed",
+    "diffWhitespace": "passed"
+  },
+  "realModel": {
+    "model": "deepseek-flash",
+    "originalAccount": true,
+    "browser": "native Chrome computer use",
+    "newStage1MatchesOriginal": true,
+    "originalSubmissionPreserved": true,
+    "originalCriterionPreserved": true,
+    "goalStatus": "completed",
+    "revision": 1,
+    "stagesPassed": 3,
+    "stageJobs": [
+      {
+        "id": "18d4c98b-669a-417e-8768-706ed185a465",
+        "kind": "assessment",
+        "status": "succeeded",
+        "failure": null,
+        "outcome": "passed"
+      },
+      {
+        "id": "08ab4f01-39d0-460f-b69b-551af9628c9c",
+        "kind": "assessment",
+        "status": "succeeded",
+        "failure": null,
+        "outcome": "passed"
+      },
+      {
+        "id": "b735fe99-2a39-417f-b842-f84b70916cc0",
+        "kind": "assessment",
+        "status": "succeeded",
+        "failure": null,
+        "outcome": "passed"
+      }
+    ],
+    "allQuotesVerbatim": true,
+    "negativeControls": [
+      {
+        "submissionId": "55039e1d-8b10-45f4-b822-5b7be5c3d04c",
+        "outcome": "insufficient",
+        "expected": "insufficient",
+        "quotesVerbatim": true,
+        "realModel": true
+      },
+      {
+        "submissionId": "02e14966-52f7-439e-bcae-6485449976d6",
+        "outcome": "not_passed",
+        "expected": "not_passed",
+        "quotesVerbatim": true,
+        "realModel": true
+      }
+    ],
+    "xp": 5,
+    "ledgerRows": 2,
+    "records": 2,
+    "publicAchievements": 0,
+    "syntheticAcceptanceOnly": true,
+    "sourceArticleHanCharactersWithoutHeaders": 827
+  },
+  "restart": {
+    "stateHashBefore": "8962461b8500ed8101b63218709c5709fdc66c17e69ff5acf90067f3a9cf53a0",
+    "stateHashAfter": "8962461b8500ed8101b63218709c5709fdc66c17e69ff5acf90067f3a9cf53a0",
+    "versionBefore": 35,
+    "versionAfter": 35,
+    "matched": true,
+    "health": "ok",
+    "browserSessionPreserved": true,
+    "completedGoalAndAllThreeStagesVisible": true
+  },
+  "evidenceRetention": {
+    "versioned": [
+      "diagnosis.json",
+      "verification.json"
+    ],
+    "localOnly": [
+      "baseline.json",
+      "verified-budget.json",
+      "verified-context.json",
+      "negative-controls.json",
+      "progress.json",
+      "after-stage1.json",
+      "final-flow.json",
+      "after-final-restart.json",
+      "local-upgrade.json",
+      "context-upgrade.json",
+      "final-restart.json",
+      "runtime.json",
+      "api.log",
+      "worker.log"
+    ]
+  }
+}

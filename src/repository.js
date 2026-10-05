@@ -261,8 +261,33 @@ export class Repository {
     await this.pool.query("DELETE FROM sessions WHERE expires_at<now()");
   }
   async context(uid, job) {
-    const { state, version } = await this.state(uid),
-      key = `eo:context:${uid}:${version}`;
+    const { state, version } = await this.state(uid);
+    // Assessments are fresh judgments against the immutable submitted rubric.
+    // Previous verdicts, chat, XP and later route edits are not evidence for it.
+    if (job?.kind === "assessment") {
+      const sub = state.submissions.find(
+        (s) => s.id === job.input.submissionId,
+      );
+      const goal = sub && state.goals.find((g) => g.id === sub.goal);
+      return {
+        goals: goal ? [{ id: goal.id, title: goal.title }] : [],
+        submissions: sub
+          ? [
+              {
+                id: sub.id,
+                goal: sub.goal,
+                stage: sub.stage,
+                revision: sub.revision,
+                criteria: sub.criteria,
+                content: sub.content,
+                kind: sub.kind,
+                helpUsed: sub.helpUsed,
+              },
+            ]
+          : [],
+      };
+    }
+    const key = `eo:context:${uid}:${version}`;
     let cachedContext;
     try {
       const cached = await this.cache.get(key);
@@ -313,16 +338,6 @@ export class Repository {
       };
     }
 
-    if (job?.kind === "assessment") {
-      const sub = state.submissions.find(
-        (s) => s.id === job.input.submissionId,
-      );
-      if (sub) {
-        context.submissions = [sub];
-        const goal = state.goals.find((g) => g.id === sub.goal);
-        context.goals = goal ? [compactGoal(goal)] : [];
-      }
-    }
     if (job?.kind === "chat") {
       const message = state.messages.find((s) => s.id === job.input.messageId);
       if (message && !context.messages.some((s) => s.id === message.id))

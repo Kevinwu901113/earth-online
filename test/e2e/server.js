@@ -7,6 +7,7 @@ import { buildApp } from "../../src/app.js";
 import { Repository } from "../../src/repository.js";
 import { createClient } from "redis";
 import { runOne } from "../../src/worker.js";
+import { outputFromRun } from "../../src/agent-output.js";
 const url = process.env.TEST_DATABASE_URL;
 if (!url || !new URL(url).pathname.endsWith("_test"))
   throw new Error("Requires isolated *_test database");
@@ -25,6 +26,7 @@ const cfg = config({
   }),
   app = await buildApp({ pool, cache, config: cfg }),
   repo = new Repository(pool, cache);
+const limitedSubmissions = new Set();
 const agent = {
   run: async (job, context) => {
     if (job.kind === "route" && context.goals[0]?.title === "校验失败后重试") {
@@ -64,7 +66,19 @@ const agent = {
         ],
         sources: [],
       };
-    if (job.kind === "assessment")
+    if (job.kind === "assessment") {
+      if (context.goals[0]?.title === "评估失败后重试") {
+        await delay(1200);
+        if (!limitedSubmissions.has(job.input.submissionId)) {
+          limitedSubmissions.add(job.input.submissionId);
+          return outputFromRun("assessment", {
+            finalResponse: "",
+            events: [
+              { type: "turn/end", data: { reason: { kind: "max-tokens" } } },
+            ],
+          });
+        }
+      }
       return {
         outcome: "passed",
         feedback: "提交中包含三个具体要点。",
@@ -73,6 +87,7 @@ const agent = {
         standardId: null,
         standardVersion: null,
       };
+    }
     if (job.kind === "chat")
       return {
         reply: "我看到你的真实记录。可以先留一点休息时间。",

@@ -15,6 +15,17 @@ export function config(env = process.env) {
       SESSION_DAYS: z.coerce.number().int().min(1).max(30).default(7),
       DSH_MODEL: z.string().default("deepseek-v4-flash"),
       DSH_PROVIDER: z.string().default("deepseek-official"),
+      // Messages counts thinking and the final answer against the same cap.
+      // Keep the reasoning policy explicit instead of inheriting SDK defaults.
+      DSH_REASONING_EFFORT: z
+        .enum(["off", "low", "high", "max"])
+        .default("high"),
+      DSH_MAX_TOKENS: z.coerce
+        .number()
+        .int()
+        .min(1024)
+        .max(32768)
+        .default(16384),
       DEEPSEEK_API_KEY: z.string().optional(),
       EXA_API_KEY: z.string().optional(),
       DEEPSEEK_BASE_URL: z

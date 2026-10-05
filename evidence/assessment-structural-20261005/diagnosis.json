@@ -1,0 +1,61 @@
+{
+  "baseCommit": "0ccf7758505fdab32a6413959ceac4611add75d1",
+  "sourceJob": "f2f846c7-0782-4983-9369-4a74dfb698cd",
+  "historicalFinishReasonsAvailable": false,
+  "rawOutputRetained": false,
+  "runs": [
+    {
+      "label": "baseline",
+      "model": "deepseek-flash",
+      "maxTokens": 6000,
+      "reasoningEffort": "high",
+      "scope": "full original task context",
+      "endReason": "max-tokens",
+      "outputTokens": 6000,
+      "reasoningCharacters": 19560,
+      "outputCharacters": 368,
+      "jsonValid": false,
+      "contractValid": false,
+      "failure": {
+        "code": "model_output_limit",
+        "message": "模型达到本次生成上限，尚未生成完整结果；内容已保存，可重试。",
+        "contract": "assessment-v1",
+        "execution": {
+          "endReason": "max-tokens",
+          "outputCharacters": 368,
+          "reasoningCharacters": 19560,
+          "outputTokens": 6000
+        },
+        "phase": "completion"
+      }
+    },
+    {
+      "label": "verified-budget",
+      "model": "deepseek-flash",
+      "maxTokens": 16384,
+      "reasoningEffort": "high",
+      "scope": "full original task context",
+      "endReason": "completed",
+      "outputTokens": 6118,
+      "reasoningCharacters": 19856,
+      "outputCharacters": 1274,
+      "jsonValid": true,
+      "contractValid": true
+    },
+    {
+      "label": "verified-context",
+      "model": "deepseek-flash",
+      "maxTokens": 16384,
+      "reasoningEffort": "high",
+      "scope": "current submission with immutable rubric",
+      "endReason": "completed",
+      "outputTokens": 2203,
+      "reasoningCharacters": 4642,
+      "outputCharacters": 733,
+      "jsonValid": true,
+      "contractValid": true,
+      "outcome": "passed",
+      "quotesVerbatim": true
+    }
+  ]
+}

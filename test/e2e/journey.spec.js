@@ -16,7 +16,7 @@ test("mobile: register → plan → confirm → record → evidence → persiste
     await expect(page.locator(".overlay")).toBeHidden();
     await page.locator("[data-nav=quests]").click();
     await page.getByRole("button", { name: "开启新主线" }).click();
-    await page.getByLabel("想完成什么").fill("写英文自我介绍");
+    await page.getByLabel("想完成什么").fill("评估失败后重试");
     await page
       .getByLabel("现在的基础与条件（不了解可以写未知）")
       .fill("初学者");
@@ -65,6 +65,36 @@ test("mobile: register → plan → confirm → record → evidence → persiste
       .getByLabel("粘贴文字成果与必要说明")
       .fill("I study design. I built a chair. I want to learn more.");
     await page.getByRole("button", { name: "提交评估", exact: true }).click();
+    await page.getByRole("button", { name: "查看目标", exact: true }).click();
+    await expect(page.locator(".assessment-error")).toContainText(
+      "达到本次生成上限",
+      { timeout: 10000 },
+    );
+    await page.reload();
+    await page.locator("[data-nav=quests]").click();
+    await page.getByRole("button", { name: "查看目标", exact: true }).click();
+    await expect(page.locator(".assessment-error")).toContainText(
+      "达到本次生成上限",
+    );
+    const failed = await (await page.request.get("/api/state")).json();
+    expect(failed.state.goals[0].stage).toBe(0);
+    expect(failed.state.levelXp).toBe(4);
+    expect(failed.state.submissions[0].content).toBe(
+      "I study design. I built a chair. I want to learn more.",
+    );
+    await page.getByRole("button", { name: "重试评估", exact: true }).click();
+    await expect(page.locator(".assessment-error")).toHaveCount(0);
+    await expect(page.locator(".sheet-content .status")).toContainText(
+      "已完成",
+      { timeout: 10000 },
+    );
+    await expect(
+      page.locator(".sheet-content").getByText("当前阶段", { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      page.locator(".sheet-content").getByText("已通过", { exact: true }),
+    ).toHaveCount(1);
+    await page.getByRole("button", { name: "关闭详情" }).click();
     await expect(page.locator(".quest-tag")).toHaveText("已完成", {
       timeout: 10000,
     });

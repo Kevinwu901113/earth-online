@@ -7,6 +7,7 @@ import { config } from "../../src/config.js";
 import { buildApp } from "../../src/app.js";
 import { Repository } from "../../src/repository.js";
 import { runOne } from "../../src/worker.js";
+import { outputFromRun } from "../../src/agent-output.js";
 const url = process.env.TEST_DATABASE_URL;
 if (url && !new URL(url).pathname.endsWith("_test"))
   throw new Error("TEST_DATABASE_URL must name a disposable *_test database");
@@ -326,6 +327,62 @@ test(
       snapshot = await repo.state(a.id);
       assert.equal(snapshot.state.submissions[0].status, "error");
       assert.ok(snapshot.state.submissions[0].content);
+      const retained = structuredClone(snapshot.state);
+      const assessmentContext = await repo.context(a.id, {
+        kind: "assessment",
+        input: { submissionId: submitted.submissionId },
+      });
+      assert.deepEqual(Object.keys(assessmentContext).sort(), [
+        "goals",
+        "submissions",
+      ]);
+      assert.deepEqual(Object.keys(assessmentContext.goals[0]).sort(), [
+        "id",
+        "title",
+      ]);
+      assert.equal(
+        assessmentContext.submissions[0].content,
+        retained.submissions[0].content,
+      );
+      assert.deepEqual(
+        assessmentContext.submissions[0].criteria,
+        retained.submissions[0].criteria,
+      );
+      assert.ok(!("assessment" in assessmentContext.submissions[0]));
+      assert.ok(!("error" in assessmentContext.submissions[0]));
+      assert.equal(assessmentContext.submissions[0].helpUsed, false);
+      const truncatedRetry = await command({
+        type: "submission.retry",
+        id: submitted.submissionId,
+      });
+      await runOne(repo, {
+        run: async () =>
+          outputFromRun("assessment", {
+            finalResponse: JSON.stringify({
+              outcome: "passed",
+              feedback: "完整结构但执行被截断",
+              quotes: ["I study design."],
+              evidenceType: "text",
+              standardId: null,
+              standardVersion: null,
+            }),
+            events: [
+              { type: "turn/end", data: { reason: { kind: "max-tokens" } } },
+            ],
+          }),
+      });
+      snapshot = await repo.state(a.id);
+      assert.equal(snapshot.state.submissions[0].status, "error");
+      assert.equal(
+        snapshot.state.submissions[0].content,
+        retained.submissions[0].content,
+      );
+      assert.equal(snapshot.state.goals[0].stage, retained.goals[0].stage);
+      assert.equal(snapshot.state.goals[0].status, retained.goals[0].status);
+      assert.equal(snapshot.state.levelXp, retained.levelXp);
+      const limited = await repo.job(a.id, truncatedRetry.jobId);
+      assert.equal(limited.failure.code, "model_output_limit");
+      assert.equal(limited.failure.execution.endReason, "max-tokens");
       await command({ type: "submission.retry", id: submitted.submissionId });
       await runOne(repo, {
         run: async () => ({

@@ -25,8 +25,44 @@ const routeOutput = {
   ],
 };
 for (const scenario of [
-  { kind: "chat", output: { reply: "已读取你的实际记录。", proposals: [] } },
+  {
+    kind: "chat",
+    output: { reply: "已读取你的实际记录。", proposals: [] },
+    maxTokens: 8192,
+    effort: "low",
+  },
   { kind: "route", output: routeOutput },
+  {
+    kind: "assessment",
+    output: {
+      outcome: "passed",
+      feedback: '中文及英文引号 "引用"、换行\n和反斜线 \\ 均应完整保留。',
+      quotes: ['中心论点："阅读"留下证据。\n第二行。'],
+      evidenceType: "text",
+      standardId: null,
+      standardVersion: null,
+    },
+    fragmented: true,
+  },
+  {
+    kind: "review",
+    output: { summary: "完整 JSON 也不能掩盖截断" },
+    stop: "max_tokens",
+    failure: "model_output_limit",
+  },
+  {
+    kind: "review",
+    raw: "",
+    stop: "max_tokens",
+    failure: "model_output_limit",
+  },
+  { kind: "review", raw: '{"summary":"未完成', failure: "output_json_invalid" },
+  {
+    kind: "review",
+    raw: '{"summary":"换行\n未转义"}',
+    failure: "output_json_invalid",
+  },
+  { kind: "review", raw: "", failure: "model_output_empty" },
   {
     kind: "route",
     output: {
@@ -37,7 +73,7 @@ for (const scenario of [
   },
 ])
   test(
-    `real DSH contract and isolated tools: ${scenario.kind} ${scenario.invalid ? "invalid output" : "valid output"}`,
+    `real DSH contract and isolated tools: ${scenario.kind} ${scenario.failure ?? (scenario.invalid ? "invalid output" : "valid output")}`,
     { timeout: 60000 },
     async () => {
       let requests = 0,
@@ -53,6 +89,9 @@ for (const scenario of [
         let raw = "";
         for await (const chunk of req) raw += chunk;
         const body = JSON.parse(raw);
+        assert.equal(body.max_tokens, scenario.maxTokens ?? 16384);
+        assert.equal(body.thinking.type, "enabled");
+        assert.equal(body.output_config.effort, scenario.effort ?? "high");
         requests++;
         sawContract ||=
           JSON.stringify(body.messages).includes("输出契约") &&
@@ -64,8 +103,9 @@ for (const scenario of [
             m.content.some((c) => c.type === "tool_result"),
         );
         res.writeHead(200, { "Content-Type": "text/event-stream" });
+        const frames = [];
         const emit = (v) =>
-          res.write(`event: ${v.type}\ndata: ${JSON.stringify(v)}\n\n`);
+          frames.push(`event: ${v.type}\ndata: ${JSON.stringify(v)}\n\n`);
         emit({
           type: "message_start",
           message: {
@@ -106,7 +146,7 @@ for (const scenario of [
             index: 0,
             delta: {
               type: "text_delta",
-              text: JSON.stringify(scenario.output),
+              text: scenario.raw ?? JSON.stringify(scenario.output),
             },
           });
         }
@@ -114,12 +154,22 @@ for (const scenario of [
         emit({
           type: "message_delta",
           delta: {
-            stop_reason: requests === 1 ? "tool_use" : "end_turn",
+            stop_reason:
+              requests === 1 ? "tool_use" : (scenario.stop ?? "end_turn"),
             stop_sequence: null,
           },
           usage: { output_tokens: 30 },
         });
         emit({ type: "message_stop" });
+        const bytes = Buffer.from(frames.join(""));
+        if (scenario.fragmented) {
+          // Split within both UTF-8 characters and JSON escapes. This traverses
+          // the actual provider SSE decoder and SDK subprocess transport.
+          for (let i = 0; i < bytes.length; i += 7) {
+            res.write(bytes.subarray(i, i + 7));
+            await new Promise((resolve) => setImmediate(resolve));
+          }
+        } else res.write(bytes);
         res.end();
       });
       await new Promise((r) => server.listen(0, "127.0.0.1", r));
@@ -132,6 +182,8 @@ for (const scenario of [
           DEEPSEEK_API_KEY: "fixture-only",
           DEEPSEEK_BASE_URL: `http://127.0.0.1:${server.address().port}/anthropic`,
           DSH_TIMEOUT_MS: 45000,
+          DSH_MAX_TOKENS: scenario.maxTokens ?? 16384,
+          DSH_REASONING_EFFORT: scenario.effort ?? "high",
         });
         const pending = new DshAgent(cfg).run(
           {
@@ -150,7 +202,17 @@ for (const scenario of [
             standards: [],
           },
         );
-        if (scenario.invalid)
+        if (scenario.failure)
+          await assert.rejects(pending, (e) => {
+            assert.equal(e.failure.code, scenario.failure);
+            assert.equal(
+              e.failure.execution.endReason,
+              scenario.stop === "max_tokens" ? "max-tokens" : "completed",
+            );
+            assert.equal(e.failure.execution.outputTokens, 30);
+            return true;
+          });
+        else if (scenario.invalid)
           await assert.rejects(pending, (e) => {
             assert.equal(e.failure.code, "output_schema_invalid");
             assert.equal(e.failure.issues[0].received, "array");
