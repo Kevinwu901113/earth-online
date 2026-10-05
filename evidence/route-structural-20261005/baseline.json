@@ -1,0 +1,10 @@
+{
+  "baseCommit": "bd5c818e755c9a95404835b7e3a82d8c3fa2e3a7",
+  "environment": "macOS; DSH SDK; real deepseek-flash; existing Exa config",
+  "testGoal": "阅读一篇文章并写300字总结",
+  "baselineRuns": [
+    {"result":"ZodError","fields":["stages[0].steps","stages[1].steps","stages[2].steps","stages[3].steps"],"expected":"string"},
+    {"result":"ZodError","fields":["stages[0].steps","stages[1].steps","stages[2].steps","stages[3].steps"],"expected":"string","received":"array"}
+  ],
+  "privacy": "Only paths and types captured; raw failed model outputs not stored. Original acceptance logs did not retain field diagnostics, so historical outputs cannot be reconstructed."
+}

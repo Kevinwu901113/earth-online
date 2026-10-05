@@ -178,6 +178,43 @@ test("adjustments preserve completed prefix and fixed public criteria", () => {
   assert.equal(s.goals[0].stage, 1);
   assert.equal(s.goals[0].routeHistory.length, 1);
 });
+test("only the latest route request at the same stage may produce a confirmable draft", () => {
+  const first = applyCommand(initialState(), create, now);
+  const second = applyCommand(
+    first.state,
+    {
+      type: "goal.adjust",
+      id: first.result.goalId,
+      reason: "再次规划",
+      minutes: 30,
+    },
+    now,
+  );
+  assert.throws(
+    () => settleJob(second.state, first.jobs[0], route, [], now),
+    /不再适用/,
+  );
+  const done = settleJob(second.state, second.jobs[0], route, [], now);
+  const moved = structuredClone(done.state);
+  moved.goals[0].stage++;
+  assert.throws(
+    () =>
+      applyCommand(
+        moved,
+        {
+          type: "goal.confirm",
+          id: first.result.goalId,
+          draftId: second.jobs[0].id,
+        },
+        now,
+      ),
+    /阶段已变化/,
+  );
+  assert.throws(
+    () => settleJob(moved, second.jobs[0], route, [], now),
+    /不再适用/,
+  );
+});
 test("daily XP cap and no rest penalty; a scheduled action cannot reward twice", () => {
   let s = initialState();
   const cmd = {

@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { transaction } from "./db.js";
+import { AgentError } from "./agent-output.js";
 import {
   applyCommand,
   settleJob,
@@ -15,12 +16,39 @@ export class Repository {
   }
   async state(uid) {
     const { rows } = await this.pool.query(
-      "SELECT state,version FROM players WHERE user_id=$1",
+      `SELECT p.state,p.version,COALESCE((
+        SELECT jsonb_agg(j) FROM (
+          SELECT DISTINCT ON (input->>'goalId') id,input,status,error,failure
+          FROM agent_jobs WHERE user_id=p.user_id AND kind='route'
+          ORDER BY input->>'goalId',created_at DESC,id DESC
+        ) j
+      ),'[]') AS route_jobs FROM players p WHERE user_id=$1`,
       [uid],
     );
     if (!rows[0]) throw new DomainError("用户不存在", 404);
+    const state = expireState(rows[0].state);
+    for (const goal of state.goals) {
+      const j = rows[0].route_jobs.find((j) => j.input.goalId === goal.id);
+      goal.planning =
+        j &&
+        (!goal.routeJobId || goal.routeJobId === j.id) &&
+        j.input.revision === goal.revision &&
+        (j.input.stage === undefined || j.input.stage === goal.stage) &&
+        ["draft", "active", "paused"].includes(goal.status)
+          ? {
+              jobId: j.id,
+              status: j.status,
+              error:
+                j.status === "failed" && !j.failure
+                  ? "本次规划未完成，目标内容已保存，可重试。此旧任务未保留详细原因。"
+                  : j.error,
+              code: j.failure?.code ?? null,
+              minutes: j.input.minutes ?? goal.minutes,
+            }
+          : null;
+    }
     return {
-      state: expireState(rows[0].state),
+      state,
       version: Number(rows[0].version),
       rules,
     };
@@ -48,6 +76,14 @@ export class Repository {
       }
       if (Number(player.version) !== expectedVersion)
         throw new DomainError("数据已在其他页面更新，请刷新后重试");
+      if (command.type === "goal.adjust") {
+        const pending = await c.query(
+          "SELECT id FROM agent_jobs WHERE user_id=$1 AND kind='route' AND input->>'goalId'=$2 AND status IN ('queued','running') LIMIT 1",
+          [uid, command.id],
+        );
+        if (pending.rowCount)
+          throw new DomainError("这条目标正在规划，请等待完成或先取消");
+      }
       const standards =
         command.type === "practice.grade"
           ? (
@@ -108,7 +144,7 @@ export class Repository {
     const {
       rows: [j],
     } = await this.pool.query(
-      "SELECT id,kind,status,result,error,created_at,updated_at FROM agent_jobs WHERE id=$1 AND user_id=$2",
+      "SELECT id,kind,status,result,error,failure,created_at,updated_at FROM agent_jobs WHERE id=$1 AND user_id=$2",
       [id, uid],
     );
     if (!j) throw new DomainError("任务不存在", 404);
@@ -130,7 +166,7 @@ export class Repository {
       const {
         rows: [j],
       } = await c.query(
-        "UPDATE agent_jobs SET status='cancelled',updated_at=now() WHERE id=$1 AND user_id=$2 AND status IN ('queued','running') RETURNING *",
+        "UPDATE agent_jobs SET status='cancelled',lease_until=NULL,updated_at=now() WHERE id=$1 AND user_id=$2 AND status IN ('queued','running') RETURNING *",
         [id, uid],
       );
       if (!j) throw new DomainError("任务不存在或已结束");
@@ -203,16 +239,17 @@ export class Repository {
       });
     }
   }
-  async fail(j, message) {
+  async fail(j, failure) {
     return transaction(this.pool, async (c) => {
       await c.query("SELECT user_id FROM players WHERE user_id=$1 FOR UPDATE", [
         j.user_id,
       ]);
       const { rowCount } = await c.query(
-        "UPDATE agent_jobs SET status='failed',error=$2,lease_until=NULL,updated_at=now() WHERE id=$1 AND status='running'",
-        [j.id, message],
+        "UPDATE agent_jobs SET status='failed',error=$2,failure=$3,lease_until=NULL,updated_at=now() WHERE id=$1 AND status='running'",
+        [j.id, failure.message, failure],
       );
-      if (rowCount) await this.markAssessmentError(c, j, message);
+      if (rowCount) await this.markAssessmentError(c, j, failure.message);
+      return rowCount > 0;
     });
   }
   async expire() {
@@ -220,7 +257,7 @@ export class Repository {
       "SELECT * FROM agent_jobs WHERE status='running' AND lease_until<now()",
     );
     for (const j of rows)
-      await this.fail(j, "执行中断，结果未提交；原始内容已保留，请主动重试。");
+      await this.fail(j, new AgentError("job_interrupted").failure);
     await this.pool.query("DELETE FROM sessions WHERE expires_at<now()");
   }
   async context(uid, job) {
@@ -233,6 +270,7 @@ export class Repository {
     } catch {}
     const compactGoal = (g) => ({
       ...g,
+      planning: undefined,
       routeHistory: undefined,
       draft: g.draft
         ? { id: g.draft.id, summary: g.draft.route.summary }

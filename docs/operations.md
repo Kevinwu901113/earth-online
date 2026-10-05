@@ -21,7 +21,9 @@ Fastify 当前不信任外来代理头，API 限流每来源 IP 120/分钟、登
 
 缺少凭据时任务明确失败，基础业务继续可用。Redis 短暂失效时正在运行的 worker 从数据库重建上下文；API 读写持久数据不依赖缓存，但 health 返回 503。初次启动需要依赖服务可连接。
 
-DSH 运行数据在 `DATA_DIR/agent/<user>/<job>`，正常结束自动删除。崩溃后的目录可能含用户上下文；确认对应任务不再 running 后删除遗留目录。不要将它们放进日志收集或公开目录。API/worker 错误日志只输出错误类型/代码和任务 ID，不记录原文、密码或密钥。
+DSH 运行数据在 `DATA_DIR/agent/<user>/<job>`，正常结束自动删除。崩溃后的目录可能含用户上下文；确认对应任务不再 running 后删除遗留目录。不要将它们放进日志收集或公开目录。worker 只在任务确实转为 failed 后记录失败，主动取消后的关闭异常不会改写终态或记成新失败。日志和 `agent_jobs.failure` 保留安全错误分类及有上限的字段类型诊断，不记录模型原文、任意对象键、密码或密钥。
+
+排查时区分 `model_unconfigured`（未配置）、`model_execution_failed`（调用未完成）、`model_timeout`、`output_json_invalid`、`output_schema_invalid`（输出格式）、`source_unverified`（检索来源）、`domain_rejected`（预算/版本/标准等业务约束）和 `job_interrupted`（租约过期）。不要把输出格式问题归为模型连接不可用。目标页可直接重试；格式失败详情使用任务 ID 查询，旧日志无法补回已经删除的失败原文。
 
 ## 不可变公共标准
 
@@ -70,7 +72,7 @@ npm run admin -- verify-external /path/to/review.json
 
 ## 数据与备份
 
-PostgreSQL 是事实来源。定期执行 `pg_dump --format=custom` 到加密、受控的备份位置，并在隔离数据库中演练 `pg_restore`。部署环境自行设定 RPO/RTO 与备份保留期限；本仓库不假设已有托管备份。迁移 001 只创建表/索引，可重复运行。
+PostgreSQL 是事实来源。定期执行 `pg_dump --format=custom` 到加密、受控的备份位置，并在隔离数据库中演练 `pg_restore`。部署环境自行设定 RPO/RTO 与备份保留期限；本仓库不假设已有托管备份。迁移 001 创建表/索引；002 为 agent_jobs 新增可空 failure JSONB。均可重复运行，部署顺序仍为先迁移、再重启 API/worker；旧任务和业务数据不重写。
 
 发布前先备份；当前数据库变更是新增结构，应用回滚到上一镜像不会删除数据。后续破坏性迁移需单独设计回滚，不通过 `docker compose down -v` 回滚。
 

@@ -183,6 +183,82 @@ test(
         ],
         sources: [],
       };
+      assert.equal(
+        (await repo.state(a.id)).state.goals[0].planning.status,
+        "queued",
+      );
+      const duplicate = await req(
+        "POST",
+        "/commands",
+        {
+          expectedVersion: (await repo.state(a.id)).version,
+          command: {
+            type: "goal.adjust",
+            id: created.goalId,
+            reason: "duplicate",
+            minutes: 20,
+          },
+        },
+        a.cookie,
+        randomUUID(),
+      );
+      assert.equal(duplicate.statusCode, 409);
+      const invalid = structuredClone(route);
+      invalid.stages[0].steps = ["private raw model text"];
+      await runOne(repo, {
+        run: async () => {
+          assert.equal(
+            (await repo.state(a.id)).state.goals[0].planning.status,
+            "running",
+          );
+          return invalid;
+        },
+      });
+      const failed = await repo.job(a.id, created.jobId);
+      assert.equal(failed.failure.code, "output_schema_invalid");
+      assert.deepEqual(failed.failure.issues[0].path, ["stages", 0, "steps"]);
+      assert.equal(failed.failure.issues[0].received, "array");
+      assert.ok(!JSON.stringify(failed).includes("private raw model text"));
+      // Existing acceptance failures have neither request IDs nor diagnostics.
+      await pool.query("UPDATE agent_jobs SET failure=NULL WHERE id=$1", [
+        created.jobId,
+      ]);
+      await pool.query(
+        "UPDATE players SET state=state #- '{goals,0,routeJobId}' WHERE user_id=$1",
+        [a.id],
+      );
+      assert.match(
+        (await repo.state(a.id)).state.goals[0].planning.error,
+        /旧任务未保留详细原因/,
+      );
+      assert.equal(
+        (await repo.state(a.id)).state.goals[0].planning.status,
+        "failed",
+      );
+      // The goal must still find its job after it leaves the recent-50 task list.
+      for (let i = 0; i < 51; i++)
+        await pool.query(
+          "INSERT INTO agent_jobs(id,user_id,kind,input,status) VALUES($1,$2,'review','{}','succeeded')",
+          [randomUUID(), a.id],
+        );
+      assert.equal(
+        (await repo.state(a.id)).state.goals[0].planning.status,
+        "failed",
+      );
+      const retry = await command({
+        type: "goal.adjust",
+        id: created.goalId,
+        reason: "重试",
+        minutes: 20,
+      });
+      assert.equal(
+        (await repo.state(a.id)).state.goals[0].planning.status,
+        "queued",
+      );
+      assert.equal(
+        (await repo.state(a.id)).state.goals[0].planning.error,
+        null,
+      );
       await runOne(repo, { run: async () => route });
       let snapshot = await repo.state(a.id);
       assert.equal(snapshot.state.goals[0].status, "draft");
@@ -190,8 +266,51 @@ test(
       await command({
         type: "goal.confirm",
         id: created.goalId,
-        draftId: created.jobId,
+        draftId: retry.jobId,
       });
+      const adjusting = await command({
+        type: "goal.adjust",
+        id: created.goalId,
+        reason: "调整预算",
+        minutes: 15,
+      });
+      await runOne(repo, { run: async () => route });
+      let preserved = (await repo.state(a.id)).state.goals[0];
+      assert.equal(preserved.status, "active");
+      assert.equal(preserved.revision, 1);
+      assert.equal(preserved.planning.code, "domain_rejected");
+      assert.equal(preserved.planning.minutes, 15);
+      const cancelledRoute = await command({
+        type: "goal.adjust",
+        id: created.goalId,
+        reason: "取消测试",
+        minutes: 20,
+      });
+      const late = await repo.claim(1000);
+      assert.equal(late.id, cancelledRoute.jobId);
+      await repo.cancel(a.id, late.id);
+      assert.equal(
+        (await repo.state(a.id)).state.goals[0].planning.status,
+        "cancelled",
+      );
+      assert.equal(await repo.finish(late, route), false);
+      assert.equal((await repo.state(a.id)).state.goals[0].draft, null);
+      const lease = await command({
+        type: "goal.adjust",
+        id: created.goalId,
+        reason: "租约超时",
+        minutes: 20,
+      });
+      await repo.claim(1000);
+      await pool.query(
+        "UPDATE agent_jobs SET lease_until=now()-interval '1 minute' WHERE id=$1",
+        [lease.jobId],
+      );
+      await repo.expire();
+      assert.equal(
+        (await repo.state(a.id)).state.goals[0].planning.code,
+        "job_interrupted",
+      );
       const submitted = await command({
         type: "submission.create",
         goal: created.goalId,

@@ -1,0 +1,11 @@
+{
+  "unit": {"passed":26,"failed":0,"skipped":1,"skipReason":"Linux user service installation on macOS"},
+  "syntaxCheck":"passed",
+  "integration":{"passed":4,"failed":0,"database":"earth_route_repair_20261005_test","model":"real DSH subprocess with local protocol fixture"},
+  "browser":{"passed":4,"failed":0,"coverage":["empty and HTML API errors","full mobile goal/route/action/challenge journey","goal-level schema failure and live open-detail refresh","reload preserves failure; retry clears error and enables confirmation"]},
+  "legacyCompatibilityFollowup":{"passed":1,"failed":0,"coverage":"original goals without routeJobId and failure diagnostics retain visible failure and neutral reason; retry succeeds"},
+  "realModelEvidence":"real-flow.json",
+  "deploymentEvidence":"local-upgrade.json",
+  "baselineEvidence":"baseline.json",
+  "evidenceRetention":{"versioned":["baseline.json","verification.json"],"localOnly":["real-flow.json","local-upgrade.json","original-recovery.json","runtime.json","api.log","worker.log"]}
+}

@@ -22,9 +22,11 @@
     page = "self",
     jobs = [],
     modal = false,
+    modalGoalId = null,
     focusBefore,
     user,
     refreshing = false,
+    renderedSnapshot,
     poll;
   const labels = {
     draft: "等待路线",
@@ -90,11 +92,17 @@
           api("/state"),
           api("/jobs"),
         ]);
+        const serialized = JSON.stringify([snapshot, nextJobs]);
+        const changed = renderedSnapshot !== serialized;
         state = snapshot.state;
         version = snapshot.version;
         rules = snapshot.rules;
         jobs = nextJobs;
-        render();
+        if (changed) {
+          renderedSnapshot = serialized;
+          render();
+          if (modalGoalId) goal(modalGoalId);
+        }
       } finally {
         refreshing = null;
       }
@@ -119,9 +127,15 @@
       throw e;
     }
   }
-  function open(html) {
+  function open(html, goalId = null) {
+    const updating = goalId && modalGoalId === goalId;
+    const focusedAction = updating
+      ? document.activeElement?.dataset.action
+      : null;
+    const scroll = $(".sheet").scrollTop;
     if (!modal) focusBefore = document.activeElement;
     modal = true;
+    modalGoalId = goalId;
     $(".sheet-content").innerHTML = html;
     const title = $(".sheet-content h3");
     if (title) title.id = "ep-sheet-title";
@@ -129,10 +143,17 @@
     [".main-home", ".journey-page", "nav", ".guide-bar"].forEach(
       (s) => ($(s).inert = true),
     );
-    $(".close").focus();
+    if (updating) {
+      $(".sheet").scrollTop = scroll;
+      const button = $$(".sheet-content button").find(
+        (b) => b.dataset.action === focusedAction,
+      );
+      (button ?? $(".close")).focus({ preventScroll: true });
+    } else $(".close").focus();
   }
   function close() {
     modal = false;
+    modalGoalId = null;
     $(".overlay").hidden = true;
     [".main-home", ".journey-page", "nav", ".guide-bar"].forEach(
       (s) => ($(s).inert = false),
@@ -238,7 +259,7 @@
       state.goals
         .map(
           (g) =>
-            `<article class="entry quest-tile"><span class="quest-tag">${label(g.status)}</span><h2>${esc(g.title)}</h2><p>${esc(g.stages[g.stage]?.name ?? "准备一条适合你的路线")}</p>${btn(g.draft ? "查看路线草案" : "查看目标", "goal", g.id)}</article>`,
+            `<article class="entry quest-tile"><span class="quest-tag">${g.status === "draft" ? planningTitle(g) : label(g.status)}</span><h2>${esc(g.title)}</h2><p>${esc(g.stages[g.stage]?.name ?? planningTitle(g))}</p>${planningNotice(g)}${btn(g.draft ? "查看路线草案" : "查看目标", "goal", g.id)}${canRetryPlanning(g) ? btn("重试规划", "adjustGoal", g.id) : ""}</article>`,
         )
         .join("") +
       (!state.goals.length
@@ -314,6 +335,7 @@
     open(
       heading("QUEST", esc(g.title)) +
         `<p class="status">${label(g.status)} · 每天 ${g.minutes} 分钟 · 路线版本 ${g.revision}</p><h4>完成条件</h4>${prose(g.criterion)}<h4>起点</h4>${prose(g.base)}` +
+        planningNotice(g) +
         (g.draft
           ? `<h3>待确认的${g.revision ? "调整" : "路线"}</h3>${prose(g.draft.route.summary)}<p>每天 ${g.draft.route.minutes} 分钟</p>${g.draft.route.stages.map((s, i) => `<div class="entry"><b>${g.stage + i + 1}. ${esc(s.name)}</b>${prose(s.criterion)}${prose(s.steps)}</div>`).join("")}<p class="tiny-note">确认后开始执行；已完成阶段保留。${g.revision ? "下方展示当前路线，便于比较。" : ""}</p>${sources(g.draft.route.sources)}${btn("确认这条路线", "confirmGoal", g.id, "solid")}`
           : "") +
@@ -324,7 +346,7 @@
           )
           .join("") +
         sources(g.sources ?? []) +
-        `<div class="row">${g.status === "active" && stage ? btn("安排练习", "goalPlan", id) + btn("提交成果", "submit", id) + btn("暂停主线", "pauseGoal", id) : g.status === "paused" ? btn("恢复主线", "resumeGoal", id) : ""}${["draft", "active", "paused"].includes(g.status) ? btn(g.draft ? "重新规划" : "调整／重试规划", "adjustGoal", id) : ""}${g.status === "awaiting_external" ? btn("提交外部证据", "external", id) : ""}${!["ended", "completed"].includes(g.status) ? btn("结束目标", "endGoal", id) : ""}</div>` +
+        `<div class="row">${g.status === "active" && stage ? btn("安排练习", "goalPlan", id) + btn("提交成果", "submit", id) + btn("暂停主线", "pauseGoal", id) : g.status === "paused" ? btn("恢复主线", "resumeGoal", id) : ""}${["draft", "active", "paused"].includes(g.status) ? (planningBusy(g) ? btn("取消本次规划", "cancelPlanning", id) : btn(canRetryPlanning(g) ? "重试规划" : g.draft ? "重新规划" : "调整／重试规划", "adjustGoal", id)) : ""}${g.status === "awaiting_external" ? btn("提交外部证据", "external", id) : ""}${!["ended", "completed"].includes(g.status) ? btn("结束目标", "endGoal", id) : ""}</div>` +
         state.submissions
           .filter((s) => s.goal === id)
           .reverse()
@@ -334,7 +356,36 @@
           )
           .join("") +
         btn("后台处理进度", "jobs"),
+      id,
     );
+  }
+  const planningBusy = (g) =>
+    ["queued", "running"].includes(g.planning?.status);
+  const canRetryPlanning = (g) =>
+    ["failed", "cancelled"].includes(g.planning?.status);
+  function planningTitle(g) {
+    if (g.draft) return "路线待确认";
+    return (
+      {
+        queued: "规划排队中",
+        running: "正在生成路线",
+        failed: "路线规划失败",
+        cancelled: "路线规划已取消",
+      }[g.planning?.status] ?? "尚无可用路线"
+    );
+  }
+  function planningNotice(g) {
+    const p = g.planning;
+    if (!p || p.status === "succeeded") return "";
+    const message =
+      p.status === "failed"
+        ? (p.error ?? "路线生成失败，可重试。")
+        : p.status === "cancelled"
+          ? "本次规划已取消，目标内容已保存，可重试。"
+          : p.status === "queued"
+            ? "规划正在排队，完成后会显示可确认的草案。"
+            : "正在生成路线，完成后会显示可确认的草案。";
+    return `<div class="planning-status" role="status"><b>${planningTitle(g)}</b>${prose(message)}${g.revision && canRetryPlanning(g) ? "<p>已确认的路线仍然保留。</p>" : ""}</div>`;
   }
   function sources(items) {
     return items.length
@@ -566,7 +617,7 @@
           field(
             "minutes",
             "每天可用分钟",
-            g.minutes,
+            g.planning?.minutes ?? g.minutes,
             "number",
             'min="5" max="240" required',
           ),
@@ -576,7 +627,7 @@
           reason: v.reason,
           minutes: +v.minutes,
         }),
-        { submit: "生成新草案" },
+        { submit: "生成新草案", after: () => goal(id) },
       );
     },
     submit: (id) =>
@@ -641,6 +692,15 @@
       await api("/jobs/" + id + "/cancel", { method: "POST", body: {} });
       await refresh();
       showJobs();
+    },
+    cancelPlanning: async (id) => {
+      const g = state.goals.find((g) => g.id === id);
+      await api("/jobs/" + g.planning.jobId + "/cancel", {
+        method: "POST",
+        body: {},
+      });
+      await refresh();
+      goal(id);
     },
     logout: async () => {
       await api("/auth/logout", { method: "POST", body: {} });

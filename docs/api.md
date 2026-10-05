@@ -19,6 +19,10 @@
 
 命令成功返回 `{result,version}`。触发异步模型时 result 带 jobId；不能以 HTTP 200 等同于模型任务完成。客户端以状态刷新 + 任务终态展示结果。POST 网络断开时保留同一 Idempotency-Key 重试；修改命令后必须换新键。服务端先检查回执再检查版本，因此同一命令的过时重试仍返回原结果。
 
+`GET /api/state` 中每个目标包含派生字段 `planning`：当前规划有 `{jobId,status,error,code,minutes}`，没有适用于当前路线/阶段的任务则为 null。任务状态变化不一定改变业务 `version`，客户端须比较返回状态，不能只用版本判断是否刷新。路线确认后以已确认路线为准；规划失败不改变目标完成状态。
+
+`GET /api/jobs/:id` 的 `failure` 保存安全诊断：`code,message`，可选 `phase,contract,issues,issueCount`。结构校验失败示例：`{path:["stages",0,"steps"],code:"invalid_type",expected:"string",received:"array",length:3}`。仅任务所属账号可读，不返回模型失败回复原文。旧任务可能没有 failure；其既有 error 仍保留，不能据此反推具体字段。
+
 ## 命令目录
 
 精确类型、长度和默认值以 `src/schemas.js` 为准。

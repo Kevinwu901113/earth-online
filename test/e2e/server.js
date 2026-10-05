@@ -26,7 +26,26 @@ const cfg = config({
   app = await buildApp({ pool, cache, config: cfg }),
   repo = new Repository(pool, cache);
 const agent = {
-  run: async (job) => {
+  run: async (job, context) => {
+    if (job.kind === "route" && context.goals[0]?.title === "校验失败后重试") {
+      await delay(1800);
+      if (job.input.reason === "首次规划")
+        return {
+          summary: "失败夹具",
+          minutes: 20,
+          stat: 0,
+          stages: [
+            {
+              name: "阶段",
+              criterion: "标准",
+              exercise: "练习",
+              steps: ["不符合契约"],
+              challenge: "挑战",
+            },
+          ],
+          sources: [],
+        };
+    }
     if (job.kind === "route")
       return {
         summary: "测试路线：写出要点，再独立形成段落。",

@@ -5,6 +5,8 @@ import { config as getConfig } from "./config.js";
 import { makePool } from "./db.js";
 import { Repository } from "./repository.js";
 import { DshAgent } from "./agent.js";
+import { failureFor } from "./agent-output.js";
+import { DomainError } from "./domain.js";
 export async function runOne(repo, agent, timeoutMs = 120000, signal) {
   signal?.throwIfAborted();
   await repo.expire();
@@ -31,21 +33,20 @@ export async function runOne(repo, agent, timeoutMs = 120000, signal) {
     const out = await agent.run(job, context, abort.signal);
     await repo.finish(job, out);
   } catch (e) {
-    console.error(
-      JSON.stringify({
-        event: "agent.failure",
-        jobId: job.id,
-        kind: job.kind,
-        error: e.name,
-        code: e.code ?? null,
-      }),
-    );
-    const message = e.message?.includes("凭据")
-      ? "模型服务尚未配置；内容已保存。"
-      : e.message?.includes("超时")
-        ? "模型执行超时；内容已保存，可重试。"
-        : "生成或评估未完成；内容已保存，请检查模型服务后重试。";
-    await repo.fail(job, message);
+    const failure =
+      e instanceof DomainError
+        ? { code: "domain_rejected", phase: "settlement", message: e.message }
+        : failureFor(e);
+    const failed = await repo.fail(job, failure);
+    if (failed)
+      console.error(
+        JSON.stringify({
+          event: "agent.failure",
+          jobId: job.id,
+          kind: job.kind,
+          ...failure,
+        }),
+      );
   } finally {
     clearInterval(watcher);
     signal?.removeEventListener("abort", onAbort);

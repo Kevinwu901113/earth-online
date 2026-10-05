@@ -29,5 +29,14 @@ export async function migrate(pool) {
     await c.query(
       "INSERT INTO schema_migrations(version) VALUES ('001') ON CONFLICT DO NOTHING",
     );
+    await c.query(
+      await readFile(
+        new URL("../db/002_job_failures.sql", import.meta.url),
+        "utf8",
+      ),
+    );
+    await c.query(
+      "INSERT INTO schema_migrations(version) VALUES ('002') ON CONFLICT DO NOTHING",
+    );
   });
 }

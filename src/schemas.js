@@ -15,7 +15,9 @@ export const stageSchema = z
     name: text(120),
     criterion: text(1000),
     exercise: text(200),
-    steps: text(2000),
+    steps: text(2000).describe(
+      "练习步骤，用一段字符串表达；多步之间可用换行分隔。",
+    ),
     challenge: text(1500),
     standardId: text(100).nullable().default(null),
     standardVersion: z.number().int().positive().nullable().default(null),
@@ -143,6 +145,23 @@ export const commandSchema = z.discriminatedUnion("type", [
     criteria: text(3000),
   }),
 ]);
+export const chatSchema = z
+  .object({
+    reply: text(10000),
+    proposals: z
+      .array(z.object({ label: text(100), command: commandSchema }).strict())
+      .max(3)
+      .default([]),
+  })
+  .strict();
+export const reviewSchema = z.object({ summary: text(6000) }).strict();
+// The model instructions and the runtime validator consume the same contracts.
+export const outputSchemas = Object.freeze({
+  route: routeSchema,
+  assessment: assessmentSchema,
+  chat: chatSchema,
+  review: reviewSchema,
+});
 export const credentialsSchema = z
   .object({
     email: z

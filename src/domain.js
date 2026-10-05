@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { routeSchema, assessmentSchema } from "./schemas.js";
+import { validateOutput } from "./agent-output.js";
 export class DomainError extends Error {
   constructor(message, status = 409) {
     super(message);
@@ -105,15 +105,22 @@ export function applyCommand(
         jobId: job("route", {
           goalId: g.id,
           revision: g.revision,
+          stage: g.stage,
           reason: "首次规划",
         }),
       };
+      g.routeJobId = result.jobId;
       break;
     }
     case "goal.confirm": {
       const g = find(s.goals, cmd.id);
       if (!g.draft || g.draft.id !== cmd.draftId)
         throw new DomainError("路线草案已变动，请刷新");
+      if (
+        (g.routeJobId && g.routeJobId !== g.draft.id) ||
+        (g.draft.stage !== undefined && g.draft.stage !== g.stage)
+      )
+        throw new DomainError("当前阶段已变化，请重新规划");
       if (!["draft", "active", "paused"].includes(g.status))
         throw new DomainError("已结束的目标不能启用新路线");
       if (g.stages.length)
@@ -155,10 +162,13 @@ export function applyCommand(
         jobId: job("route", {
           goalId: g.id,
           revision: g.revision,
+          stage: g.stage,
           reason: cmd.reason,
           minutes: cmd.minutes,
         }),
       };
+      g.routeJobId = result.jobId;
+      g.draft = null;
       break;
     }
     case "plan.create": {
@@ -440,15 +450,18 @@ export function settleJob(
 ) {
   const s = expireState(state, now);
   const rewards = [];
+  output = validateOutput(job.kind, output);
   let result = output;
   if (job.kind === "route") {
     const g = find(s.goals, job.input.goalId);
     if (
       g.revision !== job.input.revision ||
+      (g.routeJobId && g.routeJobId !== job.id) ||
+      (job.input.stage !== undefined && job.input.stage !== g.stage) ||
       !["draft", "active", "paused"].includes(g.status)
     )
       throw new DomainError("计划已变化，本次生成结果不再适用");
-    const route = routeSchema.parse(output);
+    const route = output;
     if (route.minutes > (job.input.minutes ?? g.minutes))
       throw new DomainError("路线超过用户时间预算");
     for (const st of route.stages)
@@ -462,12 +475,12 @@ export function settleJob(
     const final = route.stages.at(-1);
     final.criterion =
       "目标完成条件：" + g.criterion + "\n阶段标准：" + final.criterion;
-    g.draft = { id: job.id, route, createdAt: now };
+    g.draft = { id: job.id, route, stage: g.stage, createdAt: now };
     result = route;
   } else if (job.kind === "assessment") {
     const sub = find(s.submissions, job.input.submissionId),
       g = find(s.goals, sub.goal);
-    const a = assessmentSchema.parse(output);
+    const a = output;
     if (a.quotes.some((q) => !sub.content.includes(q)))
       throw new DomainError("评价引用了成果中不存在的内容");
     if (
@@ -517,12 +530,6 @@ export function settleJob(
       outcome: a.outcome,
     });
   } else if (job.kind === "chat") {
-    if (
-      typeof output.reply !== "string" ||
-      !output.reply.trim() ||
-      output.reply.length > 10000
-    )
-      throw new DomainError("管家回复格式无效");
     s.messages.push({
       id: randomUUID(),
       role: "assistant",
@@ -531,12 +538,6 @@ export function settleJob(
       at: now,
     });
   } else if (job.kind === "review") {
-    if (
-      typeof output.summary !== "string" ||
-      !output.summary.trim() ||
-      output.summary.length > 6000
-    )
-      throw new DomainError("复盘格式无效");
     note(s, "review", "每日复盘", output.summary, now, { day: job.input.day });
   }
   return { state: s, rewards, result };
