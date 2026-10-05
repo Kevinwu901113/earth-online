@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.js";
 import { randomUUID } from "node:crypto";
 import { makePool } from "../../src/db.js";
 test("mobile: register → plan → confirm → record → evidence → persisted memory", async ({

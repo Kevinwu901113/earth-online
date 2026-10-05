@@ -97,6 +97,7 @@ const agent = {
   },
 };
 await app.listen({ port: 3101, host: "127.0.0.1" });
+process.send?.({ type: "ready" });
 let stopped = false;
 process.once("SIGTERM", () => {
   stopped = true;

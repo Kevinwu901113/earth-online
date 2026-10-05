@@ -13,6 +13,7 @@
     "unitSkipped": 1,
     "integrationPassed": 10,
     "browserPassed": 4,
+    "browserServerScope": "per-test app and worker; production rate limits unchanged",
     "syntax": "passed",
     "diffWhitespace": "passed"
   },

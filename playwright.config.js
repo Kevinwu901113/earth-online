@@ -10,10 +10,4 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
-  webServer: {
-    command: "node test/e2e/server.js",
-    port: 3101,
-    reuseExistingServer: false,
-    timeout: 30000,
-  },
 });
