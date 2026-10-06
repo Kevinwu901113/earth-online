@@ -17,6 +17,7 @@ const routeOutput = {
       name: "总结",
       criterion: "300字",
       exercise: "概括主旨",
+      actions: [],
       steps: "阅读后用自己的话总结",
       challenge: "独立提交文字",
       standardId: null,
@@ -24,10 +25,66 @@ const routeOutput = {
     },
   ],
 };
+const chatGuidance = {
+  title: "从五分钟的小事开始",
+  summary: "先整理出一块可以工作的桌面。",
+  steps: [
+    {
+      title: "整理桌面上的物品",
+      minutes: 5,
+      kind: "free",
+      detail: "把常用物品放回固定位置。",
+    },
+  ],
+};
 for (const scenario of [
   {
     kind: "chat",
     output: { reply: "已读取你的实际记录。", proposals: [] },
+    expected: {
+      reply: "已读取你的实际记录。",
+      guidance: null,
+      proposals: [],
+    },
+    maxTokens: 8192,
+    effort: "low",
+  },
+  {
+    kind: "chat",
+    label: "extra display annotations projected",
+    output: {
+      reply: "可以从这一个行动块开始。",
+      guidance: {
+        ...chatGuidance,
+        explanation: "只用于展示的补充说明。",
+        command: {
+          type: "goal.delete",
+          id: "e0c48796-7427-408b-92b8-7188f1ccdcf5",
+        },
+        steps: [
+          {
+            ...chatGuidance.steps[0],
+            color: "blue",
+            command: {
+              type: "plan.create",
+              goal: null,
+              name: "不得执行的展示字段",
+              minutes: 5,
+              day: "2030-01-01",
+              time: "09:00",
+              stat: 0,
+            },
+          },
+        ],
+      },
+      proposals: [],
+    },
+    expected: {
+      reply: "可以从这一个行动块开始。",
+      guidance: chatGuidance,
+      proposals: [],
+    },
+    fragmented: true,
     maxTokens: 8192,
     effort: "low",
   },
@@ -73,7 +130,7 @@ for (const scenario of [
   },
 ])
   test(
-    `real DSH contract and isolated tools: ${scenario.kind} ${scenario.failure ?? (scenario.invalid ? "invalid output" : "valid output")}`,
+    `real DSH contract and isolated tools: ${scenario.kind} ${scenario.label ?? scenario.failure ?? (scenario.invalid ? "invalid output" : "valid output")}`,
     { timeout: 60000 },
     async () => {
       let requests = 0,
@@ -218,7 +275,8 @@ for (const scenario of [
             assert.equal(e.failure.issues[0].received, "array");
             return true;
           });
-        else assert.deepEqual(await pending, scenario.output);
+        else
+          assert.deepEqual(await pending, scenario.expected ?? scenario.output);
         assert.equal(sawContract, true);
         assert.equal(requests, 2);
         assert.equal(sawToolResult, true);

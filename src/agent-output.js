@@ -55,7 +55,34 @@ function fieldNames(schema, names = new Set()) {
   return names;
 }
 
+const isObject = (value) =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+
+function pickFields(value, fields) {
+  return Object.fromEntries(
+    fields
+      .filter((field) => Object.hasOwn(value, field))
+      .map((field) => [field, value[field]]),
+  );
+}
+
+// Guidance is display-only. Discard extra annotations without coercing known
+// fields or admitting commands; the published model contract stays strict.
+function projectGuidance(value) {
+  if (!isObject(value)) return value;
+  const guidance = pickFields(value, ["title", "summary", "steps"]);
+  if (Array.isArray(guidance.steps))
+    guidance.steps = guidance.steps.map((step) =>
+      isObject(step)
+        ? pickFields(step, ["title", "minutes", "kind", "detail"])
+        : step,
+    );
+  return guidance;
+}
+
 export function validateOutput(kind, value) {
+  if (kind === "chat" && isObject(value) && Object.hasOwn(value, "guidance"))
+    value = { ...value, guidance: projectGuidance(value.guidance) };
   const parsed = outputSchemas[kind].safeParse(value);
   if (parsed.success) return parsed.data;
   const names = fieldNames(outputContract(kind));

@@ -122,11 +122,6 @@ test("visual guidance stays structured, bounded and compatible with old chat out
       ...guidance,
       steps: [{ ...guidance.steps[0], detail: "文".repeat(301) }],
     },
-    { ...guidance, command: { type: "action.record" } },
-    {
-      ...guidance,
-      steps: [{ ...guidance.steps[0], command: { type: "goal.create" } }],
-    },
   ])
     assert.throws(
       () => validateOutput("chat", { reply: "建议", guidance: invalid }),
@@ -141,6 +136,119 @@ test("visual guidance stays structured, bounded and compatible with old chat out
     validateOutput("chat", { reply: "请确认操作。", guidance: null, proposals })
       .proposals,
     proposals,
+  );
+});
+
+test("chat accepts extra display annotations without weakening executable output boundaries", () => {
+  const guidance = {
+    title: "从一件小事开始",
+    summary: "先完成十分钟的练习。",
+    steps: [
+      { title: "列出要点", minutes: 10, kind: "main", detail: "写三条。" },
+    ],
+  };
+  const raw = {
+    reply: "试试这一步。",
+    guidance: {
+      ...guidance,
+      explanation: "额外展示说明",
+      command: { type: "action.record" },
+      steps: [
+        {
+          ...guidance.steps[0],
+          color: "blue",
+          command: { type: "goal.create" },
+        },
+      ],
+    },
+    proposals: [],
+  };
+  const original = structuredClone(raw);
+  const out = outputFromRun("chat", {
+    finalResponse: JSON.stringify(raw),
+    events: [{ type: "turn/end", data: { reason: { kind: "completed" } } }],
+  });
+  assert.deepEqual(out, { reply: raw.reply, guidance, proposals: [] });
+  assert.deepEqual(validateOutput("chat", raw), out);
+  assert.deepEqual(raw, original);
+  assert.equal(outputContract("chat").additionalProperties, false);
+  const guidanceContract = outputContract("chat").properties.guidance.anyOf[0];
+  assert.equal(guidanceContract.additionalProperties, false);
+  assert.equal(
+    guidanceContract.properties.steps.items.additionalProperties,
+    false,
+  );
+  for (const invalid of [
+    { ...raw, unexpected: "extra root property" },
+    { ...raw, proposals: [{ label: "执行", command: { type: "unknown" } }] },
+    {
+      ...raw,
+      proposals: [{ label: "执行", command: { type: "goal.create" } }],
+    },
+    {
+      ...raw,
+      proposals: [
+        { label: "删除", command: { type: "goal.delete", id: "invalid" } },
+      ],
+    },
+    {
+      ...raw,
+      proposals: [
+        {
+          label: "删除",
+          command: {
+            type: "goal.delete",
+            id: "e0c48796-7427-408b-92b8-7188f1ccdcf5",
+          },
+          explanation: "extra proposal property",
+        },
+      ],
+    },
+    { ...raw, guidance: { ...raw.guidance, title: undefined } },
+    {
+      ...raw,
+      guidance: {
+        ...raw.guidance,
+        steps: [{ ...raw.guidance.steps[0], minutes: "10" }],
+      },
+    },
+    {
+      ...raw,
+      guidance: {
+        ...raw.guidance,
+        steps: [{ ...raw.guidance.steps[0], kind: "unknown" }],
+      },
+    },
+    {
+      ...raw,
+      guidance: {
+        ...raw.guidance,
+        steps: [{ ...raw.guidance.steps[0], detail: null }],
+      },
+    },
+    { ...raw, guidance: { ...raw.guidance, steps: [null] } },
+  ])
+    assert.throws(() => validateOutput("chat", invalid), AgentError);
+  assert.throws(
+    () =>
+      validateOutput("route", {
+        ...route,
+        explanation: "extra route property",
+      }),
+    AgentError,
+  );
+  assert.throws(
+    () =>
+      validateOutput("assessment", {
+        outcome: "passed",
+        feedback: "ok",
+        quotes: [],
+        evidenceType: "text",
+        standardId: null,
+        standardVersion: null,
+        explanation: "extra assessment property",
+      }),
+    AgentError,
   );
 });
 
