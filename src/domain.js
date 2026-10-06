@@ -37,6 +37,11 @@ const find = (list, id) => {
   if (!x) throw new DomainError("记录不存在", 404);
   return x;
 };
+const findGoal = (s, id) => {
+  const g = find(s.goals, id);
+  if (g.deletedAt) throw new DomainError("任务已删除，请先恢复");
+  return g;
+};
 const note = (s, kind, name, body, now, extra = {}) =>
   s.notes.push({
     id: randomUUID(),
@@ -48,6 +53,36 @@ const note = (s, kind, name, body, now, extra = {}) =>
   });
 const active = (g) => {
   if (g.status !== "active") throw new DomainError("请先启用或恢复主线");
+};
+const minutesAt = (time) =>
+  Number(time.slice(0, 2)) * 60 + Number(time.slice(3));
+const timeAt = (start) =>
+  `${String(Math.floor(start / 60)).padStart(2, "0")}:${String(start % 60).padStart(2, "0")}`;
+const validateSchedule = (s, day, start, minutes, now, excludeId = null) => {
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: s.profile.timezone,
+  }).format(new Date(now));
+  if (day < today) throw new DomainError("不能在过去安排新行动", 400);
+  if (start + minutes > 1440)
+    throw new DomainError("行动不能跨越当天，请分开安排", 400);
+  if (
+    s.plans.some(
+      (p) =>
+        p.id !== excludeId &&
+        p.day === day &&
+        p.status === "planned" &&
+        start < p.start + p.minutes &&
+        start + minutes > p.start,
+    )
+  )
+    throw new DomainError("该时段已有安排，请调整时间");
+};
+const currentPlanGoal = (s, p) => {
+  if (!p.goal) return;
+  const g = findGoal(s, p.goal);
+  active(g);
+  if (p.stage !== g.stage || p.revision !== g.revision)
+    throw new DomainError("路线已变化，请重新安排当前阶段");
 };
 export function applyCommand(
   state,
@@ -91,6 +126,7 @@ export function applyCommand(
         minutes: cmd.minutes,
         criterion: cmd.criterion,
         requiresExternal: cmd.requiresExternal,
+        kind: cmd.kind ?? "main",
         status: "draft",
         stage: 0,
         stages: [],
@@ -98,6 +134,7 @@ export function applyCommand(
         routeHistory: [],
         draft: null,
         createdAt: now,
+        deletedAt: null,
       };
       s.goals.push(g);
       result = {
@@ -113,7 +150,7 @@ export function applyCommand(
       break;
     }
     case "goal.confirm": {
-      const g = find(s.goals, cmd.id);
+      const g = findGoal(s, cmd.id);
       if (!g.draft || g.draft.id !== cmd.draftId)
         throw new DomainError("路线草案已变动，请刷新");
       if (
@@ -142,8 +179,37 @@ export function applyCommand(
       note(s, "route", "路线已确认", route.summary, now, { goal: g.id });
       break;
     }
-    case "goal.status": {
+    case "goal.delete": {
       const g = find(s.goals, cmd.id);
+      if (g.deletedAt) throw new DomainError("任务已在已删除列表中");
+      g.deletedAt = now;
+      // Invalidate in-flight routes even if the user restores the goal before they return.
+      g.routeJobId = randomUUID();
+      g.draft = null;
+      for (const p of s.plans)
+        if (p.goal === g.id && ["planned", "paused"].includes(p.status)) {
+          p.status = "cancelled";
+          p.cancelledAt = now;
+          p.cancelReason = "goal_deleted";
+        }
+      for (const sub of s.submissions)
+        if (sub.goal === g.id && sub.status === "pending") {
+          sub.status = "error";
+          sub.error = "任务已删除，评估已取消；恢复任务后可重试。";
+        }
+      result = { goalId: g.id };
+      break;
+    }
+    case "goal.restore": {
+      const g = find(s.goals, cmd.id);
+      if (!g.deletedAt) throw new DomainError("任务没有被删除");
+      g.deletedAt = null;
+      g.restoredAt = now;
+      result = { goalId: g.id };
+      break;
+    }
+    case "goal.status": {
+      const g = findGoal(s, cmd.id);
       if (["completed", "ended"].includes(g.status))
         throw new DomainError("目标已归档");
       if (g.status === "awaiting_external" && cmd.status !== "ended")
@@ -155,7 +221,7 @@ export function applyCommand(
       break;
     }
     case "goal.adjust": {
-      const g = find(s.goals, cmd.id);
+      const g = findGoal(s, cmd.id);
       if (!["draft", "active", "paused"].includes(g.status))
         throw new DomainError("目标已归档");
       result = {
@@ -172,29 +238,10 @@ export function applyCommand(
       break;
     }
     case "plan.create": {
-      const g = cmd.goal ? find(s.goals, cmd.goal) : null;
+      const g = cmd.goal ? findGoal(s, cmd.goal) : null;
       if (g) active(g);
-      if (
-        cmd.day <
-        new Intl.DateTimeFormat("en-CA", {
-          timeZone: s.profile.timezone,
-        }).format(new Date(now))
-      )
-        throw new DomainError("不能在过去安排新行动", 400);
-      const start =
-        Number(cmd.time.slice(0, 2)) * 60 + Number(cmd.time.slice(3));
-      if (start + cmd.minutes > 1440)
-        throw new DomainError("行动不能跨越当天，请分开安排", 400);
-      if (
-        s.plans.some(
-          (p) =>
-            p.day === cmd.day &&
-            p.status === "planned" &&
-            start < p.start + p.minutes &&
-            start + cmd.minutes > p.start,
-        )
-      )
-        throw new DomainError("该时段已有安排，请调整时间");
+      const start = minutesAt(cmd.time);
+      validateSchedule(s, cmd.day, start, cmd.minutes, now);
       const p = {
         ...cmd,
         id: randomUUID(),
@@ -207,6 +254,54 @@ export function applyCommand(
       delete p.type;
       s.plans.push(p);
       result = { planId: p.id };
+      break;
+    }
+    case "plan.update": {
+      const p = find(s.plans, cmd.id);
+      if (!["planned", "paused"].includes(p.status))
+        throw new DomainError("行动已结束，不能修改时间块");
+      currentPlanGoal(s, p);
+      const start = minutesAt(cmd.time);
+      validateSchedule(s, cmd.day, start, cmd.minutes, now, p.id);
+      Object.assign(p, {
+        name: cmd.name,
+        minutes: cmd.minutes,
+        day: cmd.day,
+        time: cmd.time,
+        start,
+        updatedAt: now,
+      });
+      result = { planId: p.id };
+      break;
+    }
+    case "plan.batch": {
+      const g = findGoal(s, cmd.goal);
+      active(g);
+      if (g.stage !== cmd.stage || g.revision !== cmd.revision)
+        throw new DomainError("路线已变化，请重新安排当前阶段");
+      if (!g.stages[g.stage]) throw new DomainError("当前阶段不存在");
+      let start = minutesAt(cmd.time);
+      const plans = [];
+      for (const block of cmd.blocks) {
+        validateSchedule(s, cmd.day, start, block.minutes, now);
+        plans.push({
+          ...block,
+          id: randomUUID(),
+          goal: g.id,
+          day: cmd.day,
+          time: timeAt(start),
+          start,
+          stat: g.stat,
+          status: "planned",
+          stage: g.stage,
+          revision: g.revision,
+          createdAt: now,
+        });
+        start += block.minutes;
+      }
+      // Validation completes before any block is added, so a conflict cannot leave a partial day plan.
+      s.plans.push(...plans);
+      result = { planIds: plans.map((p) => p.id) };
       break;
     }
     case "plan.status": {
@@ -225,13 +320,13 @@ export function applyCommand(
         throw new DomainError("该时段已有安排");
       if (["done", "partial", "cancelled", "expired"].includes(p.status))
         throw new DomainError("行动已结束");
-      if (cmd.status === "planned" && p.goal) active(find(s.goals, p.goal));
+      if (cmd.status === "planned" && p.goal) active(findGoal(s, p.goal));
       p.status = cmd.status;
       break;
     }
     case "action.record": {
       const p = cmd.plan ? find(s.plans, cmd.plan) : null;
-      const g = cmd.goal ? find(s.goals, cmd.goal) : null;
+      const g = cmd.goal ? findGoal(s, cmd.goal) : null;
       if (p) {
         if (s.records.some((r) => r.plan === p.id))
           throw new DomainError("这次行动已记录");
@@ -290,7 +385,7 @@ export function applyCommand(
       break;
     }
     case "submission.create": {
-      const g = find(s.goals, cmd.goal);
+      const g = findGoal(s, cmd.goal);
       active(g);
       const stage = g.stages[g.stage];
       if (!stage) throw new DomainError("当前阶段不存在");
@@ -312,13 +407,16 @@ export function applyCommand(
         submissionId: sub.id,
         jobId: job("assessment", { submissionId: sub.id }),
       };
+      sub.assessmentJobId = result.jobId;
       break;
     }
     case "submission.retry": {
       const sub = find(s.submissions, cmd.id);
+      findGoal(s, sub.goal);
       if (sub.status !== "error") throw new DomainError("仅失败的评估可重试");
       sub.status = "pending";
       result = { jobId: job("assessment", { submissionId: sub.id }) };
+      sub.assessmentJobId = result.jobId;
       break;
     }
     case "memory.correct": {
@@ -382,7 +480,7 @@ export function applyCommand(
       break;
     }
     case "goal.external": {
-      const g = find(s.goals, cmd.id);
+      const g = findGoal(s, cmd.id);
       if (g.status !== "awaiting_external")
         throw new DomainError("当前不等待外部结果");
       g.externalEvidence = { content: cmd.content, status: "pending", at: now };
@@ -453,7 +551,7 @@ export function settleJob(
   output = validateOutput(job.kind, output);
   let result = output;
   if (job.kind === "route") {
-    const g = find(s.goals, job.input.goalId);
+    const g = findGoal(s, job.input.goalId);
     if (
       g.revision !== job.input.revision ||
       (g.routeJobId && g.routeJobId !== job.id) ||
@@ -464,6 +562,14 @@ export function settleJob(
     const route = output;
     if (route.minutes > (job.input.minutes ?? g.minutes))
       throw new DomainError("路线超过用户时间预算");
+    if (
+      route.stages.some(
+        (st) =>
+          st.actions.reduce((total, action) => total + action.minutes, 0) >
+          route.minutes,
+      )
+    )
+      throw new DomainError("阶段行动块超过用户时间预算");
     for (const st of route.stages)
       if (st.standardId) {
         const standard = standards.find(
@@ -479,7 +585,12 @@ export function settleJob(
     result = route;
   } else if (job.kind === "assessment") {
     const sub = find(s.submissions, job.input.submissionId),
-      g = find(s.goals, sub.goal);
+      g = findGoal(s, sub.goal);
+    if (
+      sub.status !== "pending" ||
+      (sub.assessmentJobId && sub.assessmentJobId !== job.id)
+    )
+      throw new DomainError("本次评估已结束或取消，结果不再适用");
     const a = output;
     if (a.quotes.some((q) => !sub.content.includes(q)))
       throw new DomainError("评价引用了成果中不存在的内容");
@@ -534,6 +645,7 @@ export function settleJob(
       id: randomUUID(),
       role: "assistant",
       content: output.reply,
+      guidance: output.guidance,
       proposals: output.proposals ?? [],
       at: now,
     });

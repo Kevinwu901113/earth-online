@@ -1,6 +1,13 @@
 import { z } from "zod";
 const text = (n = 1000) => z.string().trim().min(1).max(n);
 export const uuid = z.uuid();
+const time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
+const actionBlock = z
+  .object({
+    name: text(200),
+    minutes: z.number().int().min(1).max(1440),
+  })
+  .strict();
 export const date = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -15,6 +22,13 @@ export const stageSchema = z
     name: text(120),
     criterion: text(1000),
     exercise: text(200),
+    actions: z
+      .array(actionBlock.extend({ minutes: z.number().int().min(1).max(240) }))
+      .max(12)
+      .default([])
+      .describe(
+        "可直接安排进一天的具体行动块；name 简短明确，minutes 表示时长，每阶段总时长不得超过路线 minutes。",
+      ),
     steps: text(2000).describe(
       "练习步骤，用一段字符串表达；多步之间可用换行分隔。",
     ),
@@ -69,8 +83,11 @@ export const commandSchema = z.discriminatedUnion("type", [
     minutes: z.number().int().min(5).max(240),
     criterion: text(1500),
     requiresExternal: z.boolean().default(false),
+    kind: z.enum(["main", "side"]).default("main"),
   }),
   z.object({ type: z.literal("goal.confirm"), id: uuid, draftId: uuid }),
+  z.object({ type: z.literal("goal.delete"), id: uuid }),
+  z.object({ type: z.literal("goal.restore"), id: uuid }),
   z.object({
     type: z.literal("goal.status"),
     id: uuid,
@@ -88,8 +105,25 @@ export const commandSchema = z.discriminatedUnion("type", [
     name: text(200),
     minutes: z.number().int().min(1).max(1440),
     day: date,
-    time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+    time,
     stat: z.number().int().min(0).max(4),
+  }),
+  z.object({
+    type: z.literal("plan.update"),
+    id: uuid,
+    name: text(200),
+    minutes: z.number().int().min(1).max(1440),
+    day: date,
+    time,
+  }),
+  z.object({
+    type: z.literal("plan.batch"),
+    goal: uuid,
+    stage: z.number().int().nonnegative(),
+    revision: z.number().int().positive(),
+    day: date,
+    time,
+    blocks: z.array(actionBlock).min(1).max(24),
   }),
   z.object({
     type: z.literal("plan.status"),
@@ -145,9 +179,29 @@ export const commandSchema = z.discriminatedUnion("type", [
     criteria: text(3000),
   }),
 ]);
+export const guidanceSchema = z
+  .object({
+    title: text(120),
+    summary: text(300),
+    steps: z
+      .array(
+        z
+          .object({
+            title: text(120),
+            minutes: z.number().int().min(1).max(240),
+            kind: z.enum(["main", "side", "free"]),
+            detail: text(300).optional(),
+          })
+          .strict(),
+      )
+      .min(1)
+      .max(6),
+  })
+  .strict();
 export const chatSchema = z
   .object({
     reply: text(10000),
+    guidance: guidanceSchema.nullable().default(null),
     proposals: z
       .array(z.object({ label: text(100), command: commandSchema }).strict())
       .max(3)

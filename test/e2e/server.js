@@ -29,6 +29,8 @@ const cfg = config({
 const limitedSubmissions = new Set();
 const agent = {
   run: async (job, context) => {
+    if (job.kind === "route" && context.goals[0]?.title === "删除规划中的任务")
+      await delay(800);
     if (job.kind === "route" && context.goals[0]?.title === "校验失败后重试") {
       await delay(1800);
       if (job.input.reason === "首次规划")
@@ -58,6 +60,10 @@ const agent = {
             name: "完成一段介绍",
             criterion: "包含背景、经历和目标",
             exercise: "写三个要点",
+            actions: [
+              { name: "列出三个要点", minutes: 5 },
+              { name: "写成完整段落", minutes: 15 },
+            ],
             steps: "先用自己的话写出背景、经历和目标。",
             challenge: "独立写完整段落",
             standardId: null,
@@ -88,11 +94,52 @@ const agent = {
         standardVersion: null,
       };
     }
-    if (job.kind === "chat")
+    if (job.kind === "chat") {
+      await delay(600);
+      const goal = context.goals.find(
+        (g) => !g.deletedAt && g.status === "active",
+      );
+      const blocks = goal?.stages[goal.stage]?.actions?.length
+        ? goal.stages[goal.stage].actions
+        : [
+            { name: "列出三个要点", minutes: 5 },
+            { name: "写成完整段落", minutes: 15 },
+          ];
+      const command = goal
+        ? {
+            type: "plan.batch",
+            goal: goal.id,
+            stage: goal.stage,
+            revision: goal.revision,
+            day: new Intl.DateTimeFormat("en-CA", {
+              timeZone: "Asia/Shanghai",
+            }).format(new Date()),
+            time: "16:00",
+            blocks,
+          }
+        : {
+            type: "goal.create",
+            kind: "side",
+            title: "完成一篇短文",
+            base: "从三个要点开始",
+            minutes: 20,
+            criterion: "写出包含三个要点的完整段落",
+            requiresExternal: false,
+          };
       return {
         reply: "我看到你的真实记录。可以先留一点休息时间。",
-        proposals: [],
+        guidance: {
+          title: "把今天拆成两小步",
+          summary: "先完成要点，再写完整段落。",
+          steps: blocks.slice(0, 6).map((block) => ({
+            title: block.name,
+            minutes: block.minutes,
+            kind: goal?.kind ?? "side",
+          })),
+        },
+        proposals: [{ label: "安排这几个小步骤", command }],
       };
+    }
     return { summary: "今天有一条真实投入记录。没有新增能力认证。" };
   },
 };

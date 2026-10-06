@@ -31,6 +31,7 @@ export class Repository {
       const j = rows[0].route_jobs.find((j) => j.input.goalId === goal.id);
       goal.planning =
         j &&
+        !goal.deletedAt &&
         (!goal.routeJobId || goal.routeJobId === j.id) &&
         j.input.revision === goal.revision &&
         (j.input.stage === undefined || j.input.stage === goal.stage) &&
@@ -99,6 +100,15 @@ export class Repository {
         new Date().toISOString(),
         standards,
       );
+      if (command.type === "goal.delete") {
+        const submissions = next.state.submissions
+          .filter((sub) => sub.goal === command.id)
+          .map((sub) => sub.id);
+        await c.query(
+          "UPDATE agent_jobs SET status='cancelled',lease_until=NULL,updated_at=now() WHERE user_id=$1 AND status IN ('queued','running') AND ((kind='route' AND input->>'goalId'=$2) OR (kind='assessment' AND input->>'submissionId'=ANY($3::text[])))",
+          [uid, command.id, submissions],
+        );
+      }
       if (next.jobs.length) {
         const {
           rows: [counts],
@@ -268,7 +278,9 @@ export class Repository {
       const sub = state.submissions.find(
         (s) => s.id === job.input.submissionId,
       );
-      const goal = sub && state.goals.find((g) => g.id === sub.goal);
+      const goal =
+        sub && state.goals.find((g) => g.id === sub.goal && !g.deletedAt);
+      if (sub && !goal) throw new DomainError("任务已删除，评估不再适用");
       return {
         goals: goal ? [{ id: goal.id, title: goal.title }] : [],
         submissions: sub
@@ -287,7 +299,7 @@ export class Repository {
           : [],
       };
     }
-    const key = `eo:context:${uid}:${version}`;
+    const key = `eo:context:v2:${uid}:${version}`;
     let cachedContext;
     try {
       const cached = await this.cache.get(key);
@@ -295,6 +307,7 @@ export class Repository {
     } catch {}
     const compactGoal = (g) => ({
       ...g,
+      kind: g.kind ?? "main",
       planning: undefined,
       routeHistory: undefined,
       draft: g.draft
@@ -303,7 +316,13 @@ export class Repository {
     });
     const context = cachedContext ?? {
       profile: state.profile,
-      goals: state.goals.slice(-20).map(compactGoal),
+      goals: state.goals
+        .filter((g) => !g.deletedAt)
+        .slice(-20)
+        .map(compactGoal),
+      plans: state.plans
+        .filter((p) => ["planned", "paused"].includes(p.status))
+        .slice(-100),
       records: state.records
         .slice(-30)
         .map((r) => ({ ...r, note: r.note.slice(0, 500) })),
@@ -322,7 +341,10 @@ export class Repository {
       } catch {}
     }
     if (job?.kind === "route") {
-      const goal = state.goals.find((g) => g.id === job.input.goalId);
+      const goal = state.goals.find(
+        (g) => g.id === job.input.goalId && !g.deletedAt,
+      );
+      if (!goal) throw new DomainError("任务已删除，规划不再适用");
       context.goals = goal ? [compactGoal(goal)] : [];
     }
     if (job?.kind === "review") {

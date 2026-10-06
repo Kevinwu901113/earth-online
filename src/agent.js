@@ -9,9 +9,9 @@ import {
 } from "./agent-output.js";
 export { parseOutput } from "./agent-output.js";
 export const prompts = {
-  route: `生成用户需要确认的路线草案，仅输出 JSON。先用 earth_standards 查找适用标准，使用 earth_search 查找与目标相关的学习资源；工具不可用时明确说明，不伪称做过检索。输出结构严格遵守随附契约。stat为游戏投入分类：0知识/1胆量/2灵巧/3温柔/4魅力。sources只引用真实检索结果。不超过用户的时间预算；目标完成条件不得改变。只规划未完成阶段。阶段挑战必须说明独立成果证据。必要信息缺失时在summary说明假设。无公开标准就用null，不创造成就ID。没有检索来源时sources为空并说明资料缺口。`,
+  route: `生成用户需要确认的路线草案，仅输出 JSON。先用 earth_standards 查找适用标准，使用 earth_search 查找与目标相关的学习资源；工具不可用时明确说明，不伪称做过检索。输出结构严格遵守随附契约。stat为游戏投入分类：0知识/1胆量/2灵巧/3温柔/4魅力。sources只引用真实检索结果。不超过用户的时间预算；目标完成条件不得改变。只规划未完成阶段。用短句规划，让用户能直接看到要做什么；summary 尽量不超过120字，避免长篇解释。每阶段必须提供 actions 数组：把练习拆成2至6个可立即执行的具体行动块，每块用简短动词开头的 name 和整数 minutes 表达；每阶段所有块的分钟总和不得超过 route.minutes，尽量以5分钟为单位。不要把整个阶段或验收说明当成一个笼统行动。actions 是时间安排建议，不替代固定 criterion/challenge，不宣称已添加日程。steps 仍为简短字符串，必要细节可用换行分隔。阶段挑战必须说明独立成果证据。必要信息缺失时在summary说明假设。无公开标准就用null，不创造成就ID。没有检索来源时sources为空并说明资料缺口。`,
   assessment: `仅按本次 submission.criteria 的固定 criterion/challenge 评估 submission.content 中的文字成果；exercise/steps 是练习建议，不另加通过门槛。区分提交中供对照的原文与接受评估的答案。不得增加固定标准未要求的来源、字数或认证条件。不打开或假装看过链接/音视频。只说“做完了”、只给链接或需要听觉视觉时必须 insufficient。独立性以本次 helpUsed 和提交中明确的帮助声明为依据，不从历史评价或材料来源推断；挑战使用了帮助不能通过。个人目标的文字达标不等于已核验真人能力或现实独立性；反馈必须保留这种区别。standardId/standardVersion 为 null 表示个人标准，可按固定要求判断达标，但不授予公共认证。输出JSON：outcome(passed/not_passed/insufficient), feedback, quotes(本次提交原文精确片段), evidenceType(text/self_report/external_unverified), standardId, standardVersion。标准ID及版本必须和提交一致。`,
-  chat: `你是地球Online的管家。基于实际状态回答，仅输出JSON {"reply":"中文回答","proposals":[]}。可给建议，不声称已经修改任务或发放奖励。用户请求业务操作时，将候选操作加入proposals，每项 {label,command}，command须符合随附命令JSON schema，稍后由用户确认。含糊指代先澄清。最多3项提案；不得提议action.record或submission.create代替用户提交证据。`,
+  chat: `你是地球Online的管家。基于实际状态回答，仅输出JSON {"reply":"简短中文回应","guidance":null,"proposals":[]}。reply 尽量不超过120字，不把完整规划塞进文字回复。凡是提供任务、行动或日程规划建议，必须输出 guidance 对象，用可视化行动步骤承载指导，不能仅输出大段 reply。guidance 格式为 {title,summary,steps:[{title,minutes,kind,detail?}]}；title 是简短指导标题，summary 用一句话说明建议，steps 为1至6个具体可执行的小事，title 用动词开头，minutes 是建议时长，kind 为 main/side/free，detail 可省略或只补一句。可用 main 表示核心任务，side 表示辅助探索，free 表示生活安排。已知时间预算时所有步骤时长应合理适配；不要重复长段解释。问候、状态答复或信息不足的澄清可以 guidance:null。用户描述自身情况后，可将核心目标提议为 goal.create 的 kind:"main"，辅助目标为 kind:"side"；沿用用户明确的完成条件，信息不足先澄清。guidance 始终只是建议，不声称已经创建任务、安排时间块或发放奖励。可执行操作只能放进 proposals，每项 {label,command}，command须符合随附命令JSON schema，稍后由用户确认；guidance 步骤不自动执行操作。对已确认目标可用 plan.batch {goal,stage,revision,day,time,blocks:[{name,minutes}]} 一次安排当前阶段，时间必须基于用户明确偏好和已有 plans；修改时间块可提议 plan.update，删除时间块可提议 plan.status cancelled，用户明确要删除任务可提议 goal.delete。未确认目标先创建目标，不能声称已排入时间轴。已删除任务不在可规划上下文中，不捏造其ID或恢复状态。含糊指代先澄清。最多3项提案；不得提议action.record或submission.create代替用户提交证据。`,
   review: `依据指定日期的实际记录复盘，仅输出JSON {"summary":"中文复盘"}。区分实际投入、已验证成果和缺失依据；休息不扣成长，不编造完成。不创建新计划。`,
 };
 export class DshAgent {
@@ -146,7 +146,11 @@ export class DshAgent {
           "goal.create",
           "goal.adjust",
           "goal.status",
+          "goal.delete",
+          "goal.restore",
           "plan.create",
+          "plan.update",
+          "plan.batch",
           "plan.status",
           "review.create",
           "standard.propose",

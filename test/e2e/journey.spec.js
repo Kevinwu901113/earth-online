@@ -37,6 +37,7 @@ test("mobile: register → plan → confirm → record → evidence → persiste
     await page.getByRole("button", { name: "保存", exact: true }).click();
     await expect(page.locator(".overlay")).toBeHidden();
     await page.locator("[data-nav=actions]").click();
+    await page.locator(".block-list > summary").click();
     await page.getByRole("button", { name: "留下记录", exact: true }).click();
     await page
       .getByLabel("留下过程、收获或遇到的问题（也可以写无）")
@@ -110,11 +111,15 @@ test("mobile: register → plan → confirm → record → evidence → persiste
       page.getByText("我已检查这份文字反馈。", { exact: true }),
     ).toBeVisible();
     await page.locator(".guide-bar").click();
-    await page.getByLabel("说说你的想法").fill("下一步呢？");
+    await page.getByLabel("说说你的目标、时间和目前的情况").fill("下一步呢？");
     await page.getByRole("button", { name: "发送", exact: true }).click();
     await expect(page.getByText("下一步呢？", { exact: true })).toBeVisible();
     await page.waitForTimeout(1500);
     await page.getByRole("button", { name: "刷新对话", exact: true }).click();
+    await expect(page.locator(".chat-guidance .guidance-step")).toHaveCount(2);
+    await page
+      .locator('.chat-explanation[data-chat-details="reply"] > summary')
+      .click();
     await expect(
       page.getByText("我看到你的真实记录。可以先留一点休息时间。", {
         exact: true,

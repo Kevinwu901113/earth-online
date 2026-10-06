@@ -117,3 +117,919 @@
     transition: none !important;
   }
 }
+
+/* Daily event blocks use the same minute scale; no minimum block height. */
+#earth-journey .timeline-section {
+  margin: 4px 0 30px;
+}
+#earth-journey .timeline-date {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-bottom: 13px;
+}
+#earth-journey .timeline-date label {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+#earth-journey .timeline-date label > span {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--sub);
+}
+#earth-journey .timeline-date input {
+  padding: 4px 0;
+  border: 0;
+  margin: 0;
+  min-height: 34px;
+  font-size: 16px;
+  font-weight: 700;
+}
+#earth-journey .day-arrow {
+  font-size: 25px;
+  width: 34px;
+  min-height: 44px;
+  padding: 0;
+}
+#earth-journey .timeline-date .quiet {
+  padding: 8px;
+  font-size: 11px;
+}
+#earth-journey .timeline-caption {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+#earth-journey .timeline-caption > span {
+  font-size: 11px;
+  color: var(--sub);
+}
+#earth-journey .timeline-caption .solid {
+  font-size: 11px;
+  min-height: 38px;
+  padding: 9px 11px;
+  box-shadow: none;
+}
+#earth-journey .timeline-legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 0 12px;
+  font-size: 9px;
+  color: var(--sub);
+}
+#earth-journey .timeline-legend > span:last-child {
+  margin-left: auto;
+}
+#earth-journey .main-dot:before,
+#earth-journey .side-dot:before,
+#earth-journey .free-dot:before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+#earth-journey .main-dot:before {
+  background: #a4c940;
+}
+#earth-journey .side-dot:before {
+  background: #b4a5e2;
+}
+#earth-journey .free-dot:before {
+  background: #dfa885;
+}
+#earth-journey .timeline-scroll {
+  height: 440px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--paper) 94%, var(--ink));
+  scrollbar-width: thin;
+  position: relative;
+}
+#earth-journey .day-timeline {
+  position: relative;
+  overflow: hidden;
+}
+#earth-journey .time-tick {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  border-top: 1px solid var(--line);
+  pointer-events: none;
+}
+#earth-journey .time-tick:after {
+  content: "";
+  position: absolute;
+  left: 48px;
+  right: 0;
+  top: 59px;
+  border-top: 1px dashed color-mix(in srgb, var(--line) 70%, transparent);
+}
+#earth-journey .time-tick > span {
+  position: relative;
+  top: 4px;
+  display: inline-block;
+  width: 46px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--sub);
+  font-variant-numeric: tabular-nums;
+}
+#earth-journey .time-block {
+  position: absolute;
+  border-radius: 5px;
+  border-left: 3px solid #a4c940;
+  z-index: 2;
+  min-width: 0;
+  color: #20251f;
+  box-shadow: 0 1px 0 #20251f18;
+}
+#earth-journey .main-block {
+  background: #e0edb0;
+  border-left-color: #9aba3e;
+}
+#earth-journey .side-block {
+  background: #e1d9f3;
+  border-left-color: #a492ce;
+}
+#earth-journey .free-block {
+  background: #f3dfcb;
+  border-left-color: #d89f71;
+}
+#earth-journey .finished-block {
+  opacity: 0.65;
+  background: color-mix(in srgb, var(--paper) 85%, var(--ink));
+  color: var(--sub);
+}
+#earth-journey .block-face {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  width: 100%;
+  height: 100%;
+  padding: 8px 10px 13px;
+  text-align: left;
+  overflow: hidden;
+  color: inherit;
+}
+#earth-journey .block-face:active {
+  transform: none;
+}
+#earth-journey .block-category {
+  font-size: 8px;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+  opacity: 0.7;
+}
+#earth-journey .block-face strong {
+  font-size: 12px;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  white-space: nowrap;
+}
+#earth-journey .block-time {
+  font-size: 9px;
+  margin-top: 4px;
+  white-space: nowrap;
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+}
+#earth-journey .block-time b {
+  font-weight: 400;
+}
+#earth-journey .short-block .block-face {
+  padding: 1px 8px;
+  flex-direction: row;
+  gap: 5px;
+  align-items: flex-start;
+}
+#earth-journey .short-block .block-category,
+#earth-journey .short-block .block-time {
+  display: none;
+}
+#earth-journey .short-block .block-face strong {
+  font-size: 10px;
+  line-height: 1.4;
+}
+#earth-journey .resize-handle {
+  position: absolute;
+  left: 0;
+  bottom: -8px;
+  height: 22px;
+  width: 100%;
+  cursor: ns-resize;
+  touch-action: none;
+  display: grid;
+  place-items: center;
+  z-index: 4;
+  padding: 0;
+  color: #20251f;
+}
+#earth-journey .resize-handle > span {
+  height: 3px;
+  width: 27px;
+  border-radius: 3px;
+  background: currentColor;
+  opacity: 0.35;
+}
+#earth-journey .resize-handle:hover > span,
+#earth-journey .resize-handle:focus-visible > span {
+  opacity: 1;
+}
+#earth-journey .resizing {
+  z-index: 5;
+  outline: 2px solid var(--ink);
+}
+#earth-journey .resize-readout {
+  position: absolute;
+  right: 3px;
+  bottom: 8px;
+  background: #20251f;
+  color: #f3efe5;
+  padding: 4px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+#earth-journey .timeline-empty {
+  position: absolute;
+  left: 68px;
+  right: 15px;
+  padding: 18px 10px;
+}
+#earth-journey .timeline-empty b {
+  font-size: 13px;
+}
+#earth-journey .timeline-empty p {
+  font-size: 11px;
+}
+#earth-journey .timeline-hint {
+  font-size: 10px !important;
+  line-height: 1.7;
+  margin: 10px 0 15px !important;
+}
+#earth-journey .block-summary {
+  display: flex;
+  gap: 10px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+#earth-journey .summary-stripe {
+  width: 4px;
+  flex-shrink: 0;
+  border-radius: 4px;
+}
+#earth-journey .block-summary > div {
+  flex: 1;
+  min-width: 0;
+}
+#earth-journey .block-summary b {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+#earth-journey .block-summary small {
+  display: block;
+  color: var(--sub);
+  font-size: 10px;
+  margin: 4px 0;
+}
+#earth-journey .block-controls {
+  display: flex;
+  gap: 8px;
+}
+#earth-journey .block-controls .quiet {
+  font-size: 10px;
+  min-height: 34px;
+  padding: 5px 8px 5px 0;
+}
+#earth-journey .task-section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 5px;
+  align-items: center;
+  margin: 20px 0 14px;
+}
+#earth-journey .task-section-head .quiet {
+  font-size: 10px;
+  padding: 6px;
+}
+#earth-journey .quest-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+#earth-journey .task-kind {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--pop);
+}
+#earth-journey .quest-card-top .quest-tag {
+  color: #f3efe5a6;
+  font-size: 10px;
+  letter-spacing: 0;
+}
+#earth-journey .quest-card-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+#earth-journey .quest-card-buttons button {
+  font-size: 11px;
+  min-height: 36px;
+  padding: 9px 11px;
+}
+#earth-journey .quest-card-buttons .solid {
+  background: var(--pop);
+  color: var(--popink);
+  box-shadow: none;
+}
+#earth-journey .action-cards {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+}
+#earth-journey .action-card {
+  background: color-mix(in srgb, var(--pop) 12%, var(--paper));
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 10px 12px;
+  position: relative;
+  border-radius: 5px;
+}
+#earth-journey .action-card > div:first-child {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+#earth-journey .action-card strong {
+  flex: 1;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+#earth-journey .action-number {
+  font-size: 9px;
+  opacity: 0.5;
+  padding-top: 3px;
+}
+#earth-journey .action-minutes {
+  font-size: 10px;
+  white-space: nowrap;
+  padding-top: 3px;
+}
+#earth-journey .action-duration {
+  height: 3px;
+  background: var(--line);
+  margin-top: 10px;
+  border-radius: 2px;
+}
+#earth-journey .action-duration > span {
+  display: block;
+  height: 100%;
+  background: #a4c940;
+}
+#earth-journey .side-action .action-duration > span {
+  background: #b4a5e2;
+}
+#earth-journey .action-card > .quiet {
+  padding: 6px 0 0;
+  min-height: 30px;
+  font-size: 10px;
+}
+#earth-journey .quest-tile .action-card {
+  background: #f3efe5;
+  color: #20251f;
+  border: 0;
+}
+#earth-journey .quest-tile .action-duration {
+  background: #20251f14;
+}
+#earth-journey .journal-empty {
+  border: 1px dashed var(--line);
+  padding: 22px 18px;
+  border-radius: 6px;
+}
+#earth-journey .journal-empty b {
+  font-size: 14px;
+}
+#earth-journey .journal-empty p {
+  font-size: 12px;
+}
+#earth-journey .stage-card {
+  margin: 20px 0;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 18px;
+}
+#earth-journey .stage-card-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#earth-journey .stage-card-title small {
+  font-size: 10px;
+  color: var(--sub);
+}
+#earth-journey .stage-card-title h4 {
+  margin: 4px 0;
+  font-size: 14px;
+}
+#earth-journey .stage-index {
+  background: var(--pop);
+  color: var(--popink);
+  font-size: 12px;
+  padding: 8px;
+}
+#earth-journey .task-details {
+  margin: 12px 0;
+}
+#earth-journey .task-details summary {
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--sub);
+  min-height: 32px;
+  padding: 8px 0;
+}
+#earth-journey .task-details .prose {
+  font-size: 12px;
+}
+#earth-journey .duration-preview {
+  padding: 12px;
+  background: color-mix(in srgb, var(--ink) 4%, var(--paper));
+}
+#earth-journey .duration-preview > span {
+  display: block;
+  height: 14px;
+  background: #b7cd72;
+  border-radius: 3px;
+}
+#earth-journey .duration-preview small {
+  display: block;
+  margin-top: 7px;
+  color: var(--sub);
+  font-size: 10px;
+}
+#earth-journey .schedule-preview {
+  display: grid;
+  gap: 3px;
+  margin: 20px 0;
+}
+#earth-journey .schedule-preview-block {
+  border-left: 3px solid #9aba3e;
+  border-radius: 4px;
+  color: #20251f;
+  padding: 4px 9px;
+  overflow: hidden;
+}
+#earth-journey .schedule-preview-block strong {
+  font-size: 12px;
+  display: block;
+}
+#earth-journey .schedule-preview-block small {
+  font-size: 10px;
+  display: block;
+  margin-top: 4px;
+}
+@media (min-width: 700px) {
+  #earth-journey .game:has(.journey-page:not([hidden])) {
+    width: 680px;
+  }
+  #earth-journey .game:has(.journey-page:not([hidden])) .overlay {
+    max-width: 680px;
+  }
+  #earth-journey .journey-page {
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+  #earth-journey .timeline-scroll {
+    height: 500px;
+  }
+  #earth-journey .time-tick > span {
+    font-size: 12px;
+  }
+  #earth-journey .block-face strong {
+    font-size: 14px;
+  }
+  #earth-journey .block-time {
+    font-size: 11px;
+  }
+  #earth-journey .block-category {
+    font-size: 10px;
+  }
+}
+#earth-journey .timeline-scroll {
+  overflow-anchor: none;
+}
+#earth-journey .schedule-preview-item {
+  padding: 10px 0;
+}
+#earth-journey .schedule-preview-item > div:first-child {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+#earth-journey .schedule-preview-item strong {
+  font-size: 12px;
+}
+#earth-journey .schedule-preview-item small {
+  font-size: 10px;
+  white-space: nowrap;
+  color: var(--sub);
+}
+
+/* The day overview and editing canvas share the exact minute scale. */
+#earth-journey .timeline-section {
+  padding: 18px 16px 14px;
+  margin: 16px -6px 30px;
+  border: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--paper) 94%, white);
+  box-shadow: 0 10px 26px #20251f06;
+}
+#earth-journey .timeline-date {
+  padding-bottom: 18px;
+}
+#earth-journey .timeline-date label > span {
+  font-size: 9px;
+  letter-spacing: 2px;
+}
+#earth-journey .timeline-date input {
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 750;
+  font-size: 17px;
+  max-width: 100%;
+}
+#earth-journey .day-arrow {
+  border-radius: 50%;
+  width: 30px;
+  min-height: 36px;
+  color: var(--sub);
+}
+#earth-journey .day-arrow:hover {
+  background: color-mix(in srgb, var(--line) 40%, transparent);
+}
+#earth-journey .timeline-date .quiet {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  min-height: 30px;
+  padding: 5px 10px;
+}
+#earth-journey .timeline-total {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+#earth-journey .timeline-total > strong {
+  font-size: 30px;
+  letter-spacing: -1px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+#earth-journey .timeline-total strong small {
+  font-size: 11px;
+  letter-spacing: 0;
+  font-weight: 400;
+  margin: 0 6px 0 3px;
+  color: var(--sub);
+}
+#earth-journey .timeline-total > span {
+  font-size: 10px;
+  color: var(--sub);
+}
+#earth-journey .timeline-caption .solid {
+  border-radius: 12px;
+  min-height: 38px;
+  padding: 10px 12px;
+}
+#earth-journey .day-overview {
+  margin: 22px 0 3px;
+}
+#earth-journey .day-overview-track {
+  height: 14px;
+  border-radius: 6px;
+  position: relative;
+  background: color-mix(in srgb, var(--line) 40%, transparent);
+  background-image: linear-gradient(90deg, transparent 99%, var(--paper) 99%);
+  background-size: 25% 100%;
+}
+#earth-journey .overview-block {
+  position: absolute;
+  height: 14px;
+  top: 0;
+  border-radius: 3px;
+  padding: 0;
+  min-width: 2px;
+  background: #99b967;
+}
+#earth-journey .overview-block.side-block {
+  background: #ac9ad6;
+}
+#earth-journey .overview-block.free-block {
+  background: #c8ab85;
+}
+#earth-journey .overview-block:hover {
+  filter: brightness(0.88);
+}
+#earth-journey .overview-hours {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--sub);
+  margin-top: 5px;
+  font-variant-numeric: tabular-nums;
+}
+#earth-journey .timeline-legend {
+  gap: 12px;
+  padding: 15px 0 12px;
+  font-size: 9px;
+}
+#earth-journey .main-dot:before {
+  background: #6e8b4f;
+}
+#earth-journey .side-dot:before {
+  background: #a18acd;
+}
+#earth-journey .free-dot:before {
+  background: #bb9b75;
+}
+#earth-journey .timeline-scroll {
+  height: 424px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  background: color-mix(in srgb, var(--paper) 96%, var(--ink));
+  scrollbar-color: color-mix(in srgb, var(--sub) 30%, transparent) transparent;
+}
+#earth-journey .day-timeline {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--paper) 92%, var(--ink)) 0 47px,
+    transparent 47px
+  );
+}
+#earth-journey .time-tick {
+  border-top-color: color-mix(in srgb, var(--line) 60%, transparent);
+  left: 48px;
+}
+#earth-journey .time-tick > span {
+  position: absolute;
+  left: -48px;
+  top: -6px;
+  font-size: 9px;
+  letter-spacing: 0.2px;
+}
+#earth-journey .time-tick:after {
+  left: 0;
+  border-top-color: color-mix(in srgb, var(--line) 45%, transparent);
+}
+#earth-journey .time-block {
+  border-radius: 11px;
+  border-left-width: 3px;
+  box-shadow:
+    0 3px 8px #20251f0a,
+    inset 0 0 0 1px #20251f08;
+}
+#earth-journey .time-block.main-block {
+  background: linear-gradient(120deg, #dce8c8, #e8efdc);
+  border-left-color: #7d985a;
+}
+#earth-journey .time-block.side-block {
+  background: linear-gradient(120deg, #e3dbf0, #efebf7);
+  border-left-color: #a18acd;
+}
+#earth-journey .time-block.free-block {
+  background: linear-gradient(120deg, #efe1cf, #f5ece0);
+  border-left-color: #bb9b75;
+}
+#earth-journey .time-block.finished-block {
+  background: color-mix(in srgb, var(--paper) 85%, var(--ink));
+}
+#earth-journey .block-face {
+  padding: 10px 11px 14px;
+  gap: 2px;
+  border-radius: inherit;
+  user-select: none;
+}
+#earth-journey .block-face[data-move-id] {
+  cursor: grab;
+  touch-action: none;
+}
+#earth-journey .block-face[data-move-id]:hover {
+  background: #ffffff20;
+}
+#earth-journey .block-category {
+  letter-spacing: 0.4px;
+  opacity: 0.7;
+  margin-bottom: 3px;
+}
+#earth-journey .block-face strong {
+  font-size: 13px;
+  font-weight: 750;
+}
+#earth-journey .block-time {
+  opacity: 0.7;
+  font-size: 9px;
+}
+#earth-journey .short-block {
+  border-radius: 5px;
+}
+#earth-journey .short-block .block-face {
+  padding: 0 8px;
+  gap: 0;
+}
+#earth-journey .short-block .block-face strong {
+  font-size: 10px;
+  line-height: 1;
+}
+#earth-journey .resize-handle > span {
+  width: 25px;
+  height: 3px;
+  opacity: 0.25;
+}
+#earth-journey .resize-handle {
+  left: calc(50% - 22px);
+  width: 44px;
+}
+#earth-journey .moving {
+  z-index: 8;
+  outline: 2px solid #7d985a;
+  box-shadow: 0 10px 20px #20251f22;
+}
+#earth-journey .moving .block-face {
+  cursor: grabbing;
+}
+#earth-journey .move-origin {
+  position: absolute;
+  border: 1px dashed color-mix(in srgb, var(--sub) 50%, transparent);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--paper) 65%, transparent);
+  z-index: 1;
+  pointer-events: none;
+}
+#earth-journey .move-conflict {
+  outline-color: #bc675c;
+}
+#earth-journey .move-readout {
+  position: absolute;
+  top: -28px;
+  left: -3px;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  padding: 6px 9px;
+  border-radius: 7px;
+  background: #34452f;
+  color: #fff;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 3px 8px #20251f22;
+}
+#earth-journey .move-conflict .move-readout {
+  background: #a95247;
+}
+#earth-journey .timeline-hint {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 9px !important;
+  margin: 10px 0 3px !important;
+  color: var(--sub);
+}
+#earth-journey .block-list {
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+}
+#earth-journey .block-list > summary {
+  font-size: 11px;
+  padding: 14px 0 4px;
+  cursor: pointer;
+  color: var(--sub);
+}
+#earth-journey .block-list > summary span {
+  display: inline-block;
+  padding: 1px 6px;
+  margin-left: 5px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--line) 60%, transparent);
+  font-size: 9px;
+}
+#earth-journey .deleted-goals {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  margin: 20px 0;
+}
+#earth-journey .deleted-goals > summary {
+  font-size: 12px;
+  color: var(--sub);
+  cursor: pointer;
+}
+#earth-journey .deleted-goals > summary span {
+  float: right;
+}
+#earth-journey .deleted-goal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+}
+#earth-journey .deleted-goal > div {
+  min-width: 0;
+}
+#earth-journey .deleted-goal small {
+  font-size: 9px;
+  color: var(--sub);
+  display: block;
+  margin-bottom: 6px;
+}
+#earth-journey .deleted-goal strong {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+#earth-journey .deleted-goal .outline {
+  font-size: 11px;
+  white-space: nowrap;
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+#earth-journey .quest-tile {
+  border-radius: 16px;
+  box-shadow: none;
+}
+#earth-journey .quest-card-buttons .quiet {
+  background: transparent;
+  color: inherit;
+  opacity: 0.65;
+}
+#earth-journey .finished-quest {
+  background: color-mix(in srgb, var(--paper) 92%, var(--ink));
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+#earth-journey .finished-quest h2,
+#earth-journey .finished-quest p {
+  color: var(--ink);
+}
+#earth-journey .finished-quest .task-kind,
+#earth-journey .finished-quest .quest-tag {
+  color: var(--sub);
+}
+#earth-journey .goal-delete-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border-top: 1px solid var(--line);
+  margin-top: 22px;
+}
+#earth-journey .goal-delete-row small {
+  font-size: 10px;
+  color: var(--sub);
+}
+@media (min-width: 700px) {
+  #earth-journey .timeline-section {
+    padding: 22px 24px 16px;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  #earth-journey .timeline-scroll {
+    height: 500px;
+  }
+  #earth-journey .block-face strong {
+    font-size: 14px;
+  }
+  #earth-journey .block-time {
+    font-size: 11px;
+  }
+  #earth-journey .block-category {
+    font-size: 10px;
+  }
+}
+@media (prefers-color-scheme: dark) {
+  #earth-journey .timeline-section {
+    background: color-mix(in srgb, var(--paper) 96%, var(--ink));
+  }
+  #earth-journey .time-block {
+    color: #20251f;
+  }
+  #earth-journey .time-block.finished-block {
+    color: var(--sub);
+  }
+}

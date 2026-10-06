@@ -1,0 +1,489 @@
+#earth-journey .chat-header h3 {
+  margin-bottom: 6px;
+}
+#earth-journey .sheet:has(.chat-header, .chat-confirm) > .close {
+  position: sticky;
+  top: -15px;
+  right: auto;
+  float: right;
+  margin: -17px -10px -27px 8px;
+  z-index: 5;
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: 0 1px 6px #20251f18;
+}
+#earth-journey .chat-header > p {
+  margin: 0 0 22px;
+  font-size: 12px;
+}
+#earth-journey .chat-history {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+#earth-journey .chat-message {
+  min-width: 0;
+}
+#earth-journey .chat-user {
+  align-self: flex-end;
+  max-width: 92%;
+  padding: 12px 15px;
+  border-radius: 16px 16px 3px 16px;
+  background: color-mix(in srgb, var(--line) 45%, var(--paper));
+}
+#earth-journey .chat-user > small,
+#earth-journey .chat-speaker small {
+  display: block;
+  font-size: 10px;
+  color: var(--sub);
+  letter-spacing: 0.6px;
+}
+#earth-journey .chat-user .prose {
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.75;
+}
+#earth-journey .chat-speaker {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+#earth-journey .chat-speaker > span {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 14px;
+}
+#earth-journey .chat-answer {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 3px 15px 15px;
+}
+#earth-journey .chat-answer p {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+}
+#earth-journey .chat-guidance {
+  padding: 17px 15px 12px;
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  background: color-mix(in srgb, var(--pop) 7%, var(--paper));
+}
+#earth-journey .guidance-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  justify-content: space-between;
+}
+#earth-journey .guidance-heading > div {
+  min-width: 0;
+}
+#earth-journey .guidance-heading > div > small {
+  font-size: 10px;
+  color: var(--sub);
+  letter-spacing: 1px;
+}
+#earth-journey .guidance-heading h4 {
+  margin: 6px 0 0;
+  font-size: 18px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+#earth-journey .guidance-heading > span {
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+}
+#earth-journey .guidance-heading > span > small {
+  display: block;
+  margin-top: 5px;
+  font-size: 9px;
+  font-weight: 400;
+  text-align: center;
+}
+#earth-journey .chat-guidance > p {
+  margin: 9px 0 15px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+#earth-journey .guidance-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+#earth-journey .guidance-step {
+  border: 1px solid var(--line);
+  border-left: 3px solid #627b56;
+  background: var(--paper);
+  padding: 12px 13px 11px;
+  border-radius: 4px 12px 12px 4px;
+  min-width: 0;
+}
+#earth-journey .guidance-step.side {
+  border-left-color: #9476aa;
+}
+#earth-journey .guidance-step.free {
+  border-left-color: #b28555;
+}
+#earth-journey .guidance-step-top {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 7px;
+}
+#earth-journey .guidance-number {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--sub);
+}
+#earth-journey .chat-kind {
+  border-radius: 20px;
+  padding: 3px 7px;
+  font-size: 9px;
+  background: color-mix(in srgb, #90a97d 18%, var(--paper));
+  color: var(--ink);
+}
+#earth-journey .chat-kind.side {
+  background: color-mix(in srgb, #b19ac0 22%, var(--paper));
+}
+#earth-journey .chat-kind.free {
+  background: color-mix(in srgb, #caaa78 22%, var(--paper));
+}
+#earth-journey .guidance-minutes {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+#earth-journey .guidance-step > b {
+  display: block;
+  font-size: 14px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+#earth-journey .chat-duration {
+  height: 6px;
+  width: 100%;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--line) 45%, var(--paper));
+  border-radius: 4px;
+  margin-top: 10px;
+}
+#earth-journey .chat-duration > span {
+  display: block;
+  height: 100%;
+  background: #627b56;
+  border-radius: inherit;
+}
+#earth-journey .chat-duration.side > span {
+  background: #9476aa;
+}
+#earth-journey .chat-duration.free > span {
+  background: #b28555;
+}
+#earth-journey .chat-step-detail {
+  margin-top: 8px;
+}
+#earth-journey .chat-step-detail summary,
+#earth-journey .chat-explanation summary,
+#earth-journey .chat-proposal-detail summary {
+  cursor: pointer;
+  color: var(--sub);
+  font-size: 11px;
+  line-height: 1.6;
+  padding: 7px 0;
+}
+#earth-journey .chat-step-detail p {
+  margin: 0 0 3px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+#earth-journey .guidance-footnote {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 11px;
+  font-size: 9px;
+  color: var(--sub);
+}
+#earth-journey .chat-explanation {
+  margin: 3px 4px 0;
+}
+#earth-journey .chat-explanation .prose {
+  font-size: 12px;
+  margin: 6px 0 12px;
+  padding-left: 10px;
+  border-left: 2px solid var(--line);
+}
+#earth-journey .chat-proposals {
+  margin-top: 15px;
+  display: grid;
+  gap: 11px;
+}
+#earth-journey .chat-section-label {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 10px;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 1px;
+}
+#earth-journey .chat-section-label span {
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--sub);
+}
+#earth-journey .chat-proposal {
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--paper);
+  padding: 15px;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+#earth-journey .chat-proposal-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--sub);
+  line-height: 1.6;
+}
+#earth-journey .chat-proposal-top > small {
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+#earth-journey .chat-proposal h4 {
+  margin: 8px 0 0;
+  font-size: 16px;
+  line-height: 1.5;
+}
+#earth-journey .chat-proposal > .solid {
+  width: 100%;
+  margin-top: 13px;
+  padding: 11px 12px;
+  min-height: 42px;
+  border-radius: 7px;
+  box-shadow: none;
+  font-size: 12px;
+}
+#earth-journey .chat-proposal.side > .solid {
+  background: #62506f;
+  color: #f3efe5;
+}
+#earth-journey .chat-proposal-detail {
+  margin-top: 9px;
+}
+#earth-journey .chat-proposal-detail > small {
+  display: block;
+  margin: 8px 0 2px;
+  font-size: 10px;
+  color: var(--sub);
+}
+#earth-journey .chat-proposal-detail .prose {
+  font-size: 12px;
+}
+#earth-journey .chat-proposal p {
+  font-size: 12px;
+  margin: 9px 0 0;
+}
+#earth-journey .chat-schedule {
+  margin-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+#earth-journey .chat-schedule-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+#earth-journey .chat-schedule-item > small {
+  width: 73px;
+  flex-shrink: 0;
+  padding-top: 4px;
+  font-size: 9px;
+  color: var(--sub);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+#earth-journey .chat-schedule-item > div {
+  flex: 1;
+  min-width: 0;
+  border-left: 2px solid #627b56;
+  padding-left: 11px;
+}
+#earth-journey .chat-schedule-item.side > div {
+  border-left-color: #9476aa;
+}
+#earth-journey .chat-schedule-item.free > div {
+  border-left-color: #b28555;
+}
+#earth-journey .chat-schedule-item b {
+  display: block;
+  font-size: 12px;
+  line-height: 1.6;
+}
+#earth-journey .chat-schedule-item > div > span {
+  display: block;
+  font-size: 10px;
+  margin-top: 3px;
+  color: var(--sub);
+}
+#earth-journey .chat-schedule-item .chat-duration {
+  margin-top: 6px;
+  height: 5px;
+}
+#earth-journey .chat-proposal-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 9px;
+  font-size: 11px;
+  color: var(--sub);
+}
+#earth-journey .chat-proposal-status button {
+  padding: 4px 0;
+  min-height: 30px;
+  font-size: 11px;
+}
+#earth-journey .chat-suggestion-note {
+  font-size: 10px;
+  line-height: 1.7;
+  margin-top: 9px;
+}
+#earth-journey .chat-processing {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  border-radius: 10px;
+  padding: 13px 14px;
+  background: color-mix(in srgb, var(--pop) 20%, var(--paper));
+}
+#earth-journey .chat-processing b {
+  display: block;
+  font-size: 12px;
+}
+#earth-journey .chat-processing small {
+  display: block;
+  font-size: 10px;
+  color: var(--sub);
+  margin-top: 4px;
+  line-height: 1.6;
+}
+#earth-journey .chat-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--ink);
+  animation: chat-pulse 1.5s ease-in-out infinite;
+}
+#earth-journey .chat-failed {
+  background: color-mix(in srgb, #ba8753 15%, var(--paper));
+}
+#earth-journey .chat-welcome {
+  text-align: center;
+  padding: 20px 5px 23px;
+}
+#earth-journey .chat-welcome > span {
+  font-size: 36px;
+  display: block;
+  margin-bottom: 12px;
+}
+#earth-journey .chat-welcome h4 {
+  margin: 0;
+  font-size: 17px;
+}
+#earth-journey .chat-welcome > p {
+  font-size: 12px;
+  margin: 9px 0 18px;
+}
+#earth-journey .chat-welcome > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+#earth-journey .chat-welcome > div > span {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  font-size: 10px;
+  padding: 6px 10px;
+}
+#earth-journey .chat-composer {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+#earth-journey .chat-composer > label {
+  margin-top: 0;
+}
+#earth-journey .chat-composer textarea {
+  min-height: 100px;
+  max-height: 240px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+#earth-journey .chat-composer > button {
+  border-radius: 8px;
+  box-shadow: none;
+  margin-top: 3px;
+}
+#earth-journey .chat-footer,
+#earth-journey .chat-confirm-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+#earth-journey .chat-footer button {
+  font-size: 11px;
+  min-height: 36px;
+  padding: 7px 0;
+}
+#earth-journey .chat-confirm-buttons {
+  margin-top: 18px;
+}
+#earth-journey .chat-confirm-buttons button {
+  flex: 1;
+  min-width: 0;
+  border-radius: 7px;
+  padding: 10px 8px;
+  box-shadow: none;
+  font-size: 12px;
+}
+@keyframes chat-pulse {
+  50% {
+    opacity: 0.3;
+    transform: scale(0.75);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #earth-journey .chat-pulse {
+    animation: none;
+  }
+}
