@@ -4,6 +4,23 @@
 
 ## 快速部署
 
+### Agent 工作台（独立实验）
+
+用于协作测试「自然语言目标 → DSH Agent 多轮澄清 → 可解析的技能树与任务规划」。代码、依赖和数据独立放在 [`tools/agent-workbench/`](tools/agent-workbench/README.md)，不接正式数据库，不发放 XP，也不改变正式网站的任务流程。
+
+```sh
+cd tools/agent-workbench
+npm ci
+# 将 .env.example 复制为 .env，填写自己的 DEEPSEEK_API_KEY
+npm start
+```
+
+打开 http://127.0.0.1:3188。界面支持切换对话、挂载现有技能/工具、查看任务、技能树及 JSON/Schema。常规信息收集最多 5 轮，另可自由补充一次背景；可恢复错误最多自动尝试 3 次。
+
+协作者请先读 [工作台 README](tools/agent-workbench/README.md)，其中包含运行配置、解析契约、代码导航、验证方式、限制及移除步骤。这里的 v2 规划协议目前只用于实验工作台，尚未接入正式网站。
+
+### 正式网站
+
 前端和 API 共用一个地址，worker 独立运行。默认整套 Docker 部署，也支持无 Docker 的 Node.js + systemd；无需绑定 Render。
 
 **只安装 Docker Engine 和 Compose v2 的本机启动：**

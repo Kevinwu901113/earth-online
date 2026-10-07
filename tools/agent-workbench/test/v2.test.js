@@ -1,0 +1,14 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import { parsePlanV2,checkResources } from '../plan-v2.js';import { parseResponse } from '../workbench-contract.js';
+const node=(id,kind,parentId)=>({id,name:id,description:'能力描述',kind,parentId,icon:kind==='milestone'?'milestone':'core',prerequisites:[],stat:0,milestone:kind==='milestone'?{framework:'IELTS',label:'7.0'}:null});
+const plan=()=>({schemaVersion:'earth.plan.v2',goal:{title:'英语',target:'雅思7',minutes:30},summary:'学习安排',assumptions:[],coreSkillId:'english',skills:[node('english','core',null),node('reading','domain','english'),node('band7','milestone','reading')],targetSkillIds:['band7'],strategy:[{name:'并行练习',skillIds:['reading'],approach:'每天先读后表达',timing:'每天'}],resources:[{id:'material',name:'用户题集',kind:'user_material',availability:'needs_user',url:null,locator:'待用户确认题集',purpose:'阅读训练',question:'你有哪本题集？'}],tasks:[{id:'read',name:'阅读练习',skillIds:['reading'],minutes:30,stat:0,purpose:'练信息定位',resourceIds:['material'],readiness:'needs_material',materialQuestion:'你有阅读题吗？',actions:[{name:'读题和定位',minutes:30,detail:'使用已确认题集的一篇阅读，先看题再逐段找对应句。'}]}]});
+const response=()=>({schemaVersion:'earth.agent.v2',status:'draft',reply:'已规划，补充材料后可开始',understanding:{objective:'雅思',knownFacts:[],unknowns:[]},questions:[{prompt:'有题集吗？',options:[{label:'有剑桥题集',value:'有剑桥题集'},{label:'暂无',value:'暂无题集'}],allowCustom:true}],plan:plan()});
+test('v2 draft supports useful planning plus multiple choice clarification',()=>assert.ok(parseResponse(response()).projection));
+test('v2 task contract rejects acceptance requirements',()=>{const p=plan();p.tasks[0].criterion='必须答对';assert.throws(()=>parsePlanV2(p))});
+test('v2 parent hierarchy cycles are rejected separately from prerequisites',()=>{const p=plan();p.skills[1].parentId='band7';assert.throws(()=>parsePlanV2(p))});
+test('v2 learning dependency cycles are rejected',()=>{const p=plan();p.skills[1].prerequisites=['band7'];p.skills[2].prerequisites=['reading'];assert.throws(()=>parsePlanV2(p))});
+test('tasks cannot claim missing materials are ready',()=>{const p=plan();p.tasks[0].readiness='ready';assert.throws(()=>parsePlanV2(p))});
+test('missing materials require a concrete question',()=>{const p=plan();p.tasks[0].materialQuestion=null;assert.throws(()=>parsePlanV2(p))});
+test('unverified resource links are not admitted as verified',()=>{const r=response();r.plan.resources[0].availability='verified_link';r.plan.resources[0].url='https://example.com/fake';assert.throws(()=>checkResources(r,[]))});
+test('questions require two or three options and a supplement entry',()=>{const r=response();r.questions[0].options.pop();assert.throws(()=>parseResponse(r))});
+test('question options must have distinct answers',()=>{const r=response();r.questions[0].options[1]=r.questions[0].options[0];assert.throws(()=>parseResponse(r))});

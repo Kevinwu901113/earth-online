@@ -1,0 +1,16 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { parseResponse,messageSchema,workbenchContracts,explicitBudget,checkBudget } from '../workbench-contract.js';
+import { fixture,exampleInput } from '../fixtures.js';
+const response=()=>({schemaVersion:'earth.agent.v1',status:'draft',reply:'已生成草案',questions:[],understanding:{objective:'英语',knownFacts:[],unknowns:[]},plan:fixture(exampleInput)});
+test('single message requires no planning form fields',()=>assert.equal(messageSchema.parse({message:'我想学英语',capabilities:{plugins:[],skills:[]}}).message,'我想学英语'));
+test('capability whitelist rejects arbitrary plugin paths',()=>assert.throws(()=>messageSchema.parse({message:'x',capabilities:{plugins:['../../shell'],skills:[]}})));
+test('valid draft projects linked tasks and skill nodes',()=>assert.ok(parseResponse(response()).projection.nodes.length));
+test('clarify cannot smuggle a draft',()=>assert.throws(()=>parseResponse({...response(),status:'clarify',questions:['每天多久？']})));
+test('clarify must actually ask a question',()=>assert.throws(()=>parseResponse({...response(),status:'clarify',plan:null})));
+test('draft must provide a plan',()=>assert.throws(()=>parseResponse({...response(),plan:null})));
+test('conversation response still rejects cyclic skill graphs',()=>{const r=response();r.plan.skills[0].prerequisites=[r.plan.skills.at(-1).id];assert.throws(()=>parseResponse(r))});
+test('conversation response still rejects over-budget tasks',()=>{const r=response();r.plan.goal.minutes=5;assert.throws(()=>parseResponse(r))});
+test('independent task and skill schemas are exported',()=>{const c=workbenchContracts();assert.ok(c.task.properties.skillIds);assert.ok(c.skillNode.properties.prerequisites)});
+test('latest explicit natural language budget overrides earlier one',()=>assert.equal(explicitBudget([{role:'user',content:'每次只有15分钟'},{role:'assistant',content:'今天30分钟'},{role:'user',content:'今天只有5分钟'}]),5));
+test('self-consistent JSON cannot override explicit user time',()=>assert.throws(()=>checkBudget(parseResponse(response()),5)));

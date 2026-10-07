@@ -1,0 +1,584 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "earth.agent.v2"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "clarify",
+        "draft",
+        "reply"
+      ]
+    },
+    "reply": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "questions": {
+      "maxItems": 3,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "options": {
+            "minItems": 2,
+            "maxItems": 3,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "value": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                }
+              },
+              "required": [
+                "label",
+                "value"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "allowCustom": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "prompt",
+          "options",
+          "allowCustom"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "understanding": {
+      "type": "object",
+      "properties": {
+        "objective": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "knownFacts": {
+          "maxItems": 12,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "unknowns": {
+          "maxItems": 8,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        }
+      },
+      "required": [
+        "objective",
+        "knownFacts",
+        "unknowns"
+      ],
+      "additionalProperties": false
+    },
+    "plan": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "schemaVersion": {
+              "type": "string",
+              "const": "earth.plan.v2"
+            },
+            "goal": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 150
+                },
+                "target": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 800
+                },
+                "minutes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 360
+                }
+              },
+              "required": [
+                "title",
+                "target",
+                "minutes"
+              ],
+              "additionalProperties": false
+            },
+            "summary": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1200
+            },
+            "assumptions": {
+              "maxItems": 12,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 600
+              }
+            },
+            "coreSkillId": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+            },
+            "skills": {
+              "minItems": 3,
+              "maxItems": 24,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 800
+                  },
+                  "icon": {
+                    "type": "string",
+                    "enum": [
+                      "core",
+                      "vocabulary",
+                      "listening",
+                      "reading",
+                      "writing",
+                      "speaking",
+                      "grammar",
+                      "milestone",
+                      "practice",
+                      "knowledge"
+                    ]
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "core",
+                      "domain",
+                      "ability",
+                      "milestone"
+                    ]
+                  },
+                  "parentId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "prerequisites": {
+                    "maxItems": 8,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+                    }
+                  },
+                  "baseline": {
+                    "default": {
+                      "status": "unlit",
+                      "basis": "unknown",
+                      "quote": null
+                    },
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "lit",
+                          "unlit"
+                        ]
+                      },
+                      "basis": {
+                        "type": "string",
+                        "enum": [
+                          "self_report",
+                          "unknown"
+                        ]
+                      },
+                      "quote": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 600
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "status",
+                      "basis",
+                      "quote"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "stat": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 4
+                  },
+                  "milestone": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "framework": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80
+                          },
+                          "label": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80
+                          }
+                        },
+                        "required": [
+                          "framework",
+                          "label"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "description",
+                  "icon",
+                  "kind",
+                  "parentId",
+                  "prerequisites",
+                  "baseline",
+                  "stat",
+                  "milestone"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "targetSkillIds": {
+              "minItems": 1,
+              "maxItems": 8,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+              }
+            },
+            "strategy": {
+              "minItems": 1,
+              "maxItems": 8,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "skillIds": {
+                    "minItems": 1,
+                    "maxItems": 8,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+                    }
+                  },
+                  "approach": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1200
+                  },
+                  "timing": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  }
+                },
+                "required": [
+                  "name",
+                  "skillIds",
+                  "approach",
+                  "timing"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "resources": {
+              "maxItems": 15,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 150
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "app",
+                      "book",
+                      "questions",
+                      "website",
+                      "user_material",
+                      "self_created"
+                    ]
+                  },
+                  "availability": {
+                    "type": "string",
+                    "enum": [
+                      "verified_link",
+                      "user_provided",
+                      "needs_user",
+                      "self_created"
+                    ]
+                  },
+                  "url": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "locator": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 800
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 600
+                  },
+                  "question": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "kind",
+                  "availability",
+                  "url",
+                  "locator",
+                  "purpose",
+                  "question"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "tasks": {
+              "minItems": 1,
+              "maxItems": 8,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 150
+                  },
+                  "skillIds": {
+                    "minItems": 1,
+                    "maxItems": 6,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+                    }
+                  },
+                  "minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 360
+                  },
+                  "stat": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 4
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 600
+                  },
+                  "resourceIds": {
+                    "maxItems": 6,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+                    }
+                  },
+                  "readiness": {
+                    "type": "string",
+                    "enum": [
+                      "ready",
+                      "needs_material"
+                    ]
+                  },
+                  "materialQuestion": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "minItems": 1,
+                    "maxItems": 8,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 180
+                        },
+                        "minutes": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 360
+                        },
+                        "detail": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1800
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "minutes",
+                        "detail"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "skillIds",
+                  "minutes",
+                  "stat",
+                  "purpose",
+                  "resourceIds",
+                  "readiness",
+                  "materialQuestion",
+                  "actions"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "schemaVersion",
+            "goal",
+            "summary",
+            "assumptions",
+            "coreSkillId",
+            "skills",
+            "targetSkillIds",
+            "strategy",
+            "resources",
+            "tasks"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "status",
+    "reply",
+    "questions",
+    "understanding",
+    "plan"
+  ],
+  "additionalProperties": false
+}

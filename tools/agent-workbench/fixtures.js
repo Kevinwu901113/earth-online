@@ -1,0 +1,6 @@
+export const exampleInput={goal:{title:'用英语进行日常文字交流',base:'能看懂基础英文，但表达不熟练',criterion:'独立写一段120词的观点，并回答两个文字追问',minutes:30},preferences:'任务短一些，优先文字练习',evidenceMode:'text',engine:'skills',mode:'fixture'};
+export function fixture(input){return {schemaVersion:'earth.skills.v1',goal:{title:input.goal.title,criterion:input.goal.criterion,minutes:input.goal.minutes},summary:'固定测试样例：验证技能依赖、任务生成结果的解析和页面渲染。',assumptions:['这是固定的英语样例，不是Agent生成；修改目标不会让样例自动适配。','个人练习标准，未引用公共认证。'],skills:[
+{id:'describe',name:'描述熟悉事物',description:'从已有词汇组成完整句子',stat:0,prerequisites:[],criterion:'写出五个完整句子描述熟悉事物',evidenceType:'text'},
+{id:'reasons',name:'解释观点',description:'用理由支撑表达',stat:0,prerequisites:['describe'],criterion:'用两条具体理由支撑一个观点',evidenceType:'text'},
+{id:'respond',name:'回应文字追问',description:'理解问题并回答',stat:4,prerequisites:['describe'],criterion:'对两个追问分别作出切题回答',evidenceType:'text'},
+{id:'exchange',name:'独立文字交流',description:'整合表达与回应',stat:4,prerequisites:['reasons','respond'],criterion:input.goal.criterion,evidenceType:'text'}],targetSkillIds:['exchange'],tasks:[{id:'describe-object',name:'描述一件喜欢的物品',skillIds:['describe'],minutes:Math.min(input.goal.minutes,15),stat:0,actions:[{name:'列出特点与相关词汇',minutes:2},{name:'写出五个完整句子',minutes:Math.min(input.goal.minutes,15)-2}],steps:'选择一个熟悉的物品，列出特点，再写五句英文。',criterion:'五个句子均表达完整意思，描述同一物品',challenge:'不借助生成式代写，独立提交五个英文句子',evidenceType:'text'}]};}

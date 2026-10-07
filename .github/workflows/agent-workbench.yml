@@ -1,0 +1,27 @@
+name: Agent workbench
+on:
+  push:
+    paths: ['tools/agent-workbench/**', '.github/workflows/agent-workbench.yml']
+  pull_request:
+    paths: ['tools/agent-workbench/**', '.github/workflows/agent-workbench.yml']
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/agent-workbench
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: tools/agent-workbench/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - name: Check exported schemas
+        run: |
+          node export-contracts.js
+          git diff --exit-code -- '*.schema.json'

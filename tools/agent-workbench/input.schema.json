@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "goal": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "base": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "criterion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1500
+        },
+        "minutes": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 240
+        }
+      },
+      "required": [
+        "title",
+        "base",
+        "criterion",
+        "minutes"
+      ],
+      "additionalProperties": false
+    },
+    "preferences": {
+      "default": "",
+      "type": "string",
+      "maxLength": 1000
+    },
+    "evidenceMode": {
+      "default": "text",
+      "type": "string",
+      "enum": [
+        "text",
+        "external"
+      ]
+    },
+    "engine": {
+      "default": "skills",
+      "type": "string",
+      "enum": [
+        "current",
+        "skills"
+      ]
+    },
+    "mode": {
+      "default": "live",
+      "type": "string",
+      "enum": [
+        "live",
+        "fixture"
+      ]
+    }
+  },
+  "required": [
+    "goal",
+    "preferences",
+    "evidenceMode",
+    "engine",
+    "mode"
+  ],
+  "additionalProperties": false
+}
