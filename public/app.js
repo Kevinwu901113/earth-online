@@ -613,17 +613,25 @@
             : "正在生成路线，完成后会显示可确认的草案。";
     return `<div class="planning-status" role="status"><b>${planningTitle(g)}</b>${prose(message)}${g.revision && canRetryPlanning(g) ? "<p>已确认的路线仍然保留。</p>" : ""}</div>`;
   }
-  function sources(items) {
-    return items.length
-      ? "<h4>参考来源</h4>" +
-          items
-            .map((s) =>
-              /^https?:\/\//i.test(s.url)
-                ? `<p class="source"><a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.title)}</a> · ${esc(s.note)}</p>`
-                : "",
-            )
-            .join("")
-      : '<p class="tiny-note">暂无经检索确认的参考来源。</p>';
+  function sourceText(value, max = 150) {
+    const text = String(value ?? "").replace(/\s+/g, " ").trim();
+    if (text.length <= max) return text;
+    const sentence = text.match(new RegExp(`^.{1,${max - 10}}?[。！？!?]`, "u"))?.[0];
+    return sentence ?? `${text.slice(0, max - 1)}…`;
+  }
+  function sources(items, { empty = true } = {}) {
+    const seen = new Set();
+    const references = (Array.isArray(items) ? items : []).flatMap((s) => {
+      if (!s || typeof s.url !== "string") return [];
+      try {
+        const url = new URL(s.url);
+        if (!["http:", "https:"].includes(url.protocol) || seen.has(url.href)) return [];
+        seen.add(url.href);
+        return [{ ...s, url: url.href, domain: url.hostname.replace(/^www\./, "") }];
+      } catch { return []; }
+    });
+    if (!references.length) return empty ? '<p class="tiny-note">暂无可显示的规划依据。</p>' : "";
+    return `<details class="source-disclosure" data-chat-details="sources"><summary><span>规划依据</span><small>${references.length} 条来源</small></summary><div class="source-list">${references.map((s) => `<article class="source-card"><a class="source-title" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" title="${esc(s.title ?? s.domain)}">${esc(sourceText(s.title || s.domain, 90))}<span aria-hidden="true"> ↗</span></a><div class="source-meta"><span>${esc(s.domain)}</span>${s.retrievedAt && Number.isFinite(Date.parse(s.retrievedAt)) ? `<time datetime="${esc(s.retrievedAt)}">检索 ${esc(localDate(s.retrievedAt))}</time>` : ""}</div>${s.note ? `<p class="source-reason">${esc(sourceText(s.note))}</p>` : ""}</article>`).join("")}</div></details>`;
   }
   function goalOptions(value) {
     return `<label>关联任务<select name="goal"><option value="">自由行动</option>${state.goals
@@ -828,7 +836,7 @@
   }
   function guidanceView(g) {
     const total = g.steps.reduce((sum, s) => sum + s.minutes, 0);
-    return `<section class="chat-guidance" aria-label="可视化行动建议"><div class="guidance-heading"><div><small>下一步 · 建议</small><h4>${esc(g.title)}</h4></div><span>${total}<small>分钟</small></span></div><p>${esc(g.summary)}</p><ol class="guidance-steps">${g.steps.map((s, i) => `<li class="guidance-step ${s.kind}"><div class="guidance-step-top"><span class="guidance-number">${String(i + 1).padStart(2, "0")}</span><span class="chat-kind ${s.kind}">${chatKind(s.kind)}</span><span class="guidance-minutes">${s.minutes} 分钟</span></div><b>${esc(s.title)}</b>${chatDuration(s.minutes, total, s.kind)}${s.detail ? `<details class="chat-step-detail" data-chat-details="step-${i}"><summary>怎么做</summary><p>${esc(s.detail)}</p></details>` : ""}</li>`).join("")}</ol><div class="guidance-footnote"><span>块的长度表示建议时长</span><span>尚未安排</span></div></section>`;
+    return `<section class="chat-guidance" aria-label="可视化行动建议"><div class="guidance-heading"><div><small>下一步 · 建议</small><h4>${esc(g.title)}</h4></div><span>${total}<small>分钟</small></span></div><p>${esc(g.summary)}</p><ol class="guidance-steps">${g.steps.map((s, i) => `<li class="guidance-step ${s.kind}"><div class="guidance-step-top"><span class="guidance-number">${String(i + 1).padStart(2, "0")}</span><span class="chat-kind ${s.kind}">${chatKind(s.kind)}</span><span class="guidance-minutes">${s.minutes} 分钟</span></div><b>${esc(s.title)}</b>${chatDuration(s.minutes, total, s.kind)}${s.detail ? `<details class="chat-step-detail" data-chat-details="step-${i}"><summary>怎么做</summary><p>${esc(s.detail)}</p></details>` : ""}</li>`).join("")}</ol><div class="guidance-footnote"><span>块的长度表示建议时长</span><span>尚未安排</span></div>${sources(g.sources ?? [], { empty: false })}</section>`;
   }
   function proposalState(c, at) {
     const g = state.goals.find((g) => g.id === (c.goal ?? c.id));

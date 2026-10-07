@@ -76,7 +76,9 @@ PostgreSQL 是事实来源。定期执行 `pg_dump --format=custom` 到加密、
 
 发布前先备份；当前数据库变更是新增结构，应用回滚到上一镜像不会删除数据。后续破坏性迁移需单独设计回滚，不通过 `docker compose down -v` 回滚。
 
-用户可下载全部业务数据。删除单条记忆不等于删除原始业务证据。如处理全量账号删除，先取消该账号任务、等待 running 结束，再准备 `{userId,confirmUserId}`（两者相同），执行 `npm run admin -- delete-account /path/to/request.json`。外键删除该账号的持久数据，Redis 缓存副本在 30 分钟内到期，备份按已公布的保留政策清除。只对已核实身份并明确要求删除的账号操作。
+用户可下载全部业务数据。删除单条记忆不等于删除原始业务证据。如处理全量账号删除，先取消该账号任务、等待 running 结束，再准备 `{userId,confirmUserId}`（两者相同），执行 `npm run admin -- delete-account /path/to/request.json`。默认 pgvector 配置会在删除账号的同一事务中清除该账号在 `main` 命名空间的私人知识文档，关联向量片段随文档级联删除；公共资料、其他账号和工作台资料不受影响。尚未建立知识表的旧数据库仍可执行账号删除。外键删除该账号的业务数据，Redis 缓存副本在 30 分钟内到期，备份按已公布的保留政策清除。只对已核实身份并明确要求删除的账号操作。
+
+若自行将主站改为 `RAG_BACKEND=file`，删除账号时还须同步清除 `RAG_DATA_DIR/main.json` 中该账号 `ownerId` 对应的私人文档及其向量；账号删除事务不会修改文件索引。不要清除公共文档或隔离工作台索引。
 
 ## 依赖
 

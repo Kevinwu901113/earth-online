@@ -1,6 +1,7 @@
 FROM node:24-bookworm-slim
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json .npmrc ./
+COPY packages/planning-rag ./packages/planning-rag
 # No shell/native coding tools are enabled in the product DSH profile.
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 COPY --chown=node:node public ./public

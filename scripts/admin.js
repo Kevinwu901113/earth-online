@@ -5,6 +5,7 @@ import { standardSchema } from "../src/standards.js";
 import { config } from "../src/config.js";
 import { makePool, transaction } from "../src/db.js";
 import { Repository } from "../src/repository.js";
+import { deleteAccount } from "./account-delete.js";
 const [action, path] = process.argv.slice(2);
 if (
   !["publish-standard", "verify-external", "delete-account"].includes(action) ||
@@ -72,24 +73,8 @@ try {
       .strict()
       .refine((x) => x.userId === x.confirmUserId)
       .parse(data);
-    // Stop this user's running jobs before this operator action. FK cascades remove all durable user data.
-    await transaction(pool, async (c) => {
-      const {
-        rows: [p],
-      } = await c.query(
-        "SELECT user_id FROM players WHERE user_id=$1 FOR UPDATE",
-        [i.userId],
-      );
-      if (!p) throw new Error("User not found");
-      const {
-        rows: [j],
-      } = await c.query(
-        "SELECT id FROM agent_jobs WHERE user_id=$1 AND status='running' LIMIT 1",
-        [i.userId],
-      );
-      if (j) throw new Error("Wait for or cancel running jobs first");
-      await c.query("DELETE FROM users WHERE id=$1", [i.userId]);
-    });
+    // Stop this user's running jobs before this operator action.
+    await deleteAccount(pool, i.userId);
     console.log(
       "Account deleted; Redis context copies expire within 30 minutes. Apply the documented backup retention policy.",
     );

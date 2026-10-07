@@ -12,7 +12,8 @@ async function walk(dir) {
     }
   }
 }
-for (const d of ["src", "dsh", "scripts", "test"]) await walk(d);
+for (const d of ["src", "dsh", "scripts", "test", "packages/planning-rag"])
+  await walk(d);
 for (const p of [
   "public/app.js",
   "public/character.js",

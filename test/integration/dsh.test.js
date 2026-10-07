@@ -6,6 +6,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DshAgent } from "../../src/agent.js";
+import { DshAgent as WorkbenchAgent } from "../../tools/agent-workbench/current/src/agent.js";
 import { config } from "../../src/config.js";
 const routeOutput = {
   summary: "根据已有条件练习阅读",
@@ -36,6 +37,28 @@ const chatGuidance = {
       detail: "把常用物品放回固定位置。",
     },
   ],
+};
+const ragSource = {
+  title: "真实知识库资料",
+  url: "https://example.org/rag-reference",
+  note: "知识库规划参考",
+  retrievedAt: "2026-10-07T00:00:00.000Z",
+};
+const ragKnowledge = {
+  available: true,
+  backend: "file",
+  chunks: [
+    {
+      id: "chunk-1",
+      documentId: "doc-1",
+      title: ragSource.title,
+      url: ragSource.url,
+      text: "RAG_PRIVATE_SENTINEL 阅读后总结。",
+      score: 0.8,
+      retrievedAt: ragSource.retrievedAt,
+    },
+  ],
+  sources: [ragSource],
 };
 for (const scenario of [
   {
@@ -90,7 +113,67 @@ for (const scenario of [
   },
   { kind: "route", output: routeOutput },
   {
+    kind: "route",
+    label: "RAG source verified through knowledge tool",
+    tool: "earth_knowledge",
+    knowledge: ragKnowledge,
+    output: {
+      ...routeOutput,
+      sources: [
+        {
+          ...ragSource,
+          title: "模型标题",
+          retrievedAt: "2020-01-01T00:00:00.000Z",
+        },
+      ],
+    },
+    expected: { ...routeOutput, sources: [ragSource] },
+  },
+  {
+    kind: "chat",
+    label: "RAG guidance source verified",
+    tool: "earth_knowledge",
+    knowledge: ragKnowledge,
+    output: {
+      reply: "参考资料做一步练习。",
+      guidance: {
+        ...chatGuidance,
+        sources: [{ ...ragSource, title: "模型标题" }],
+      },
+      proposals: [],
+    },
+    expected: {
+      reply: "参考资料做一步练习。",
+      guidance: { ...chatGuidance, sources: [ragSource] },
+      proposals: [],
+    },
+  },
+  {
+    kind: "route",
+    label: "isolated workbench RAG source trace",
+    lab: true,
+    tool: "earth_knowledge",
+    knowledge: ragKnowledge,
+    output: { ...routeOutput, sources: [{ ...ragSource, title: "模型标题" }] },
+    expected: { ...routeOutput, sources: [ragSource] },
+  },
+  {
+    kind: "chat",
+    label: "forged RAG citation rejected",
+    knowledge: ragKnowledge,
+    output: {
+      reply: "建议",
+      guidance: {
+        ...chatGuidance,
+        sources: [{ ...ragSource, url: "https://example.org/not-retrieved" }],
+      },
+      proposals: [],
+    },
+    failure: "source_unverified",
+  },
+  {
     kind: "assessment",
+    knowledge: ragKnowledge,
     output: {
       outcome: "passed",
       feedback: '中文及英文引号 "引用"、换行\n和反斜线 \\ 均应完整保留。',
@@ -136,7 +219,8 @@ for (const scenario of [
       let requests = 0,
         seenTools = [],
         sawToolResult = false,
-        sawContract = false;
+        sawContract = false,
+        sawKnowledge = false;
       const server = createServer(async (req, res) => {
         if (req.method !== "POST") {
           res.writeHead(404);
@@ -146,6 +230,9 @@ for (const scenario of [
         let raw = "";
         for await (const chunk of req) raw += chunk;
         const body = JSON.parse(raw);
+        sawKnowledge ||= JSON.stringify(body.messages).includes(
+          "RAG_PRIVATE_SENTINEL",
+        );
         assert.equal(body.max_tokens, scenario.maxTokens ?? 16384);
         assert.equal(body.thinking.type, "enabled");
         assert.equal(body.output_config.effort, scenario.effort ?? "high");
@@ -183,14 +270,20 @@ for (const scenario of [
             content_block: {
               type: "tool_use",
               id: "tool_test",
-              name: "earth_context",
+              name: scenario.tool ?? "earth_context",
               input: {},
             },
           });
           emit({
             type: "content_block_delta",
             index: 0,
-            delta: { type: "input_json_delta", partial_json: "{}" },
+            delta: {
+              type: "input_json_delta",
+              partial_json:
+                scenario.tool === "earth_knowledge"
+                  ? '{"query":"阅读练习"}'
+                  : "{}",
+            },
           });
         } else {
           emit({
@@ -242,7 +335,8 @@ for (const scenario of [
           DSH_MAX_TOKENS: scenario.maxTokens ?? 16384,
           DSH_REASONING_EFFORT: scenario.effort ?? "high",
         });
-        const pending = new DshAgent(cfg).run(
+        if (scenario.lab) cfg.labTrace = { calls: [] };
+        const pending = new (scenario.lab ? WorkbenchAgent : DshAgent)(cfg).run(
           {
             id: randomUUID(),
             user_id: randomUUID(),
@@ -257,11 +351,13 @@ for (const scenario of [
             messages: [],
             submissions: [],
             standards: [],
+            knowledge: scenario.knowledge,
           },
         );
         if (scenario.failure)
           await assert.rejects(pending, (e) => {
             assert.equal(e.failure.code, scenario.failure);
+            if (scenario.failure === "source_unverified") return true;
             assert.equal(
               e.failure.execution.endReason,
               scenario.stop === "max_tokens" ? "max-tokens" : "completed",
@@ -280,8 +376,15 @@ for (const scenario of [
         assert.equal(sawContract, true);
         assert.equal(requests, 2);
         assert.equal(sawToolResult, true);
+        if (scenario.lab)
+          assert.deepEqual(cfg.labTrace.sourceUrls, [ragSource.url]);
+        assert.equal(
+          sawKnowledge,
+          !!scenario.knowledge && scenario.kind !== "assessment",
+        );
         assert.deepEqual(seenTools.sort(), [
           "earth_context",
+          "earth_knowledge",
           "earth_search",
           "earth_standards",
         ]);

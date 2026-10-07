@@ -93,6 +93,59 @@
   font-size: 11px;
   line-height: 1.7;
 }
+#earth-journey .source-disclosure {
+  border-top: 1px solid var(--line);
+  margin: 16px 0 12px;
+}
+#earth-journey .source-disclosure > summary {
+  cursor: pointer;
+  min-height: 40px;
+  padding: 12px 0;
+  color: var(--sub);
+  font-size: 11px;
+}
+#earth-journey .source-disclosure > summary > small {
+  float: right;
+  font-size: 10px;
+  color: var(--sub);
+}
+#earth-journey .source-list {
+  display: grid;
+  gap: 10px;
+  padding-bottom: 7px;
+}
+#earth-journey .source-card {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--ink) 3%, var(--paper));
+  overflow-wrap: anywhere;
+}
+#earth-journey .source-title {
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.6;
+  text-decoration: none;
+  font-weight: 700;
+}
+#earth-journey .source-title:hover {
+  text-decoration: underline;
+}
+#earth-journey .source-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 4px;
+  color: var(--sub);
+  font-size: 9px;
+  line-height: 1.5;
+}
+#earth-journey .source-card .source-reason {
+  margin: 7px 0 0;
+  font-size: 11px;
+  color: var(--sub);
+  line-height: 1.7;
+}
 
 #earth-journey .entry {
   display: block;

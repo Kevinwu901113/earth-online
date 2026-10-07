@@ -1,4 +1,9 @@
 # Combine with compose.yaml. Supply a private .env containing production credentials.
+x-rag-env: &rag-env
+  RAG_ENABLED: ${RAG_ENABLED:-true}
+  RAG_BACKEND: ${RAG_BACKEND:-pgvector}
+  RAG_DATA_DIR: /app/var/knowledge
+  RAG_MODEL_CACHE_DIR: /app/var/models
 services:
   migrate:
     build: .
@@ -11,16 +16,34 @@ services:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
     restart: "no"
+  knowledge-init:
+    build: .
+    command:
+      - sh
+      - -c
+      - 'if [ "$$RAG_ENABLED" = "false" ]; then echo "Knowledge initialization disabled"; else node packages/planning-rag/cli.js setup && node packages/planning-rag/cli.js seed; fi'
+    env_file: .env
+    environment:
+      <<: *rag-env
+      DATABASE_URL: postgres://earth:${POSTGRES_PASSWORD:-local-development-only}@postgres:5432/earth_online
+      REDIS_URL: redis://redis:6379
+    volumes: ["app-data:/app/var"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    restart: "no"
+    init: true
   api:
     build: .
     env_file: .env
     environment:
+      <<: *rag-env
       HOST: 0.0.0.0
       DATABASE_URL: postgres://earth:${POSTGRES_PASSWORD:-local-development-only}@postgres:5432/earth_online
       REDIS_URL: redis://redis:6379
     ports: ["127.0.0.1:3000:3000"]
+    volumes: ["app-data:/app/var"]
     depends_on:
-      migrate: { condition: service_completed_successfully }
+      knowledge-init: { condition: service_completed_successfully }
     restart: unless-stopped
     init: true
     stop_grace_period: 30s
@@ -35,10 +58,14 @@ services:
     command: ["node", "src/worker.js"]
     env_file: .env
     environment:
+      <<: *rag-env
       DATABASE_URL: postgres://earth:${POSTGRES_PASSWORD:-local-development-only}@postgres:5432/earth_online
       REDIS_URL: redis://redis:6379
+    volumes: ["app-data:/app/var"]
     depends_on:
-      migrate: { condition: service_completed_successfully }
+      knowledge-init: { condition: service_completed_successfully }
     restart: unless-stopped
     init: true
     stop_grace_period: 30s
+volumes:
+  app-data:

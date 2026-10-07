@@ -1,0 +1,13 @@
+# Build against the same PostgreSQL 17 Alpine image used by the running database.
+# Installation follows https://github.com/pgvector/pgvector/tree/v0.8.6
+FROM postgres:17-alpine AS pgvector-build
+RUN apk add --no-cache build-base git icu-dev openssl-dev linux-headers \
+    && git clone --depth 1 --branch v0.8.6 https://github.com/pgvector/pgvector.git /tmp/pgvector \
+    && test "$(git -C /tmp/pgvector rev-parse HEAD)" = "8ee86c96f0fd72390f890aa8a336fda6d3ab4c6c" \
+    && make -C /tmp/pgvector -j2 PG_CONFIG=/usr/local/bin/pg_config OPTFLAGS="" with_llvm=no \
+    && make -C /tmp/pgvector PG_CONFIG=/usr/local/bin/pg_config OPTFLAGS="" with_llvm=no DESTDIR=/tmp/pgvector-install install
+
+FROM postgres:17-alpine
+COPY --from=pgvector-build /tmp/pgvector-install/usr/local/ /usr/local/
+RUN test -f /usr/local/lib/postgresql/vector.so \
+    && grep -F "default_version = '0.8.6'" /usr/local/share/postgresql/extension/vector.control

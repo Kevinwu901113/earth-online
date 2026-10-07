@@ -10,7 +10,14 @@ import { Repository } from "./repository.js";
 import { credentialsSchema, envelopeSchema, uuid } from "./schemas.js";
 import { DomainError } from "./domain.js";
 import { createOriginPolicy, browserOriginAllowed } from "./request-origin.js";
-export async function buildApp({ pool, cache, config, logger = false }) {
+import { createKnowledge } from "@earth-online/planning-rag";
+export async function buildApp({
+  pool,
+  cache,
+  config,
+  logger = false,
+  knowledge,
+}) {
   const originPolicy = createOriginPolicy(
     config.APP_ORIGIN,
     config.APP_PROXY_ORIGINS,
@@ -18,6 +25,21 @@ export async function buildApp({ pool, cache, config, logger = false }) {
   const app = Fastify({ logger, bodyLimit: 100000, trustProxy: false });
   const auth = new Auth(pool, config.SESSION_DAYS),
     repo = new Repository(pool, cache);
+  knowledge ??=
+    config.RAG_ENABLED === "true"
+      ? createKnowledge({
+          backend: config.RAG_BACKEND,
+          databaseUrl: config.DATABASE_URL,
+          dataDir: config.RAG_DATA_DIR,
+          model: config.RAG_MODEL,
+          modelCacheDir: config.RAG_MODEL_CACHE_DIR,
+          namespace: "main",
+          sourceOrigin: config.APP_ORIGIN,
+        })
+      : null;
+  app.addHook("onClose", async () => {
+    await knowledge?.close();
+  });
   await app.register(cookie);
   await app.register(rateLimit, { max: 120, timeWindow: "1 minute" });
   app.setErrorHandler((e, req, reply) => {
@@ -99,6 +121,22 @@ export async function buildApp({ pool, cache, config, logger = false }) {
     }
   });
   app.get("/api/state", (req) => repo.state(req.user.id));
+  app.get("/api/knowledge/:id", async (req) => {
+    if (!knowledge || !/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/.test(req.params.id))
+      throw new DomainError("资料不存在", 404);
+    const document = await knowledge.getDocument(req.params.id, {
+      userId: req.user.id,
+    });
+    if (!document) throw new DomainError("资料不存在", 404);
+    return {
+      id: document.id,
+      title: document.title,
+      url: document.url ?? document.sourceUrl ?? null,
+      text: document.text ?? document.content ?? "",
+      updatedAt: document.updatedAt ?? null,
+      untrusted: true,
+    };
+  });
   app.post("/api/commands", async (req) => {
     const { expectedVersion, command } = envelopeSchema.parse(req.body);
     const key = req.headers["idempotency-key"];

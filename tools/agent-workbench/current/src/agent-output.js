@@ -70,7 +70,7 @@ function pickFields(value, fields) {
 // fields or admitting commands; the published model contract stays strict.
 function projectGuidance(value) {
   if (!isObject(value)) return value;
-  const guidance = pickFields(value, ["title", "summary", "steps"]);
+  const guidance = pickFields(value, ["title", "summary", "steps", "sources"]);
   if (Array.isArray(guidance.steps))
     guidance.steps = guidance.steps.map((step) =>
       isObject(step)
@@ -78,6 +78,21 @@ function projectGuidance(value) {
         : step,
     );
   return guidance;
+}
+
+export function verifiedSources(citations, retrieved) {
+  const sources = new Map(retrieved.map((source) => [source.url, source]));
+  return citations.map((citation) => {
+    const source = sources.get(citation.url);
+    if (!source)
+      throw new AgentError("source_unverified", { phase: "validation" });
+    const { retrievedAt: _modelTimestamp, ...fields } = citation;
+    return {
+      ...fields,
+      title: (source.title || citation.title).slice(0, 200),
+      ...(source.retrievedAt ? { retrievedAt: source.retrievedAt } : {}),
+    };
+  });
 }
 
 export function validateOutput(kind, value) {

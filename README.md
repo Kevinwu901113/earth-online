@@ -6,7 +6,7 @@
 
 ### Agent 工作台（独立实验）
 
-用于协作测试「自然语言目标 → DSH Agent 多轮澄清 → 可解析的技能树与任务规划」。代码、依赖和数据独立放在 [`tools/agent-workbench/`](tools/agent-workbench/README.md)，不接正式数据库，不发放 XP，也不改变正式网站的任务流程。
+用于协作测试「自然语言目标 → DSH Agent 多轮澄清 → 可解析的技能树与任务规划」。服务、依赖配置和运行数据独立放在 [`tools/agent-workbench/`](tools/agent-workbench/README.md)，共用规划检索代码包，但使用自己的文件向量索引，不接正式数据库，不发放 XP，也不改变正式网站的任务流程。
 
 ```sh
 cd tools/agent-workbench
@@ -62,7 +62,34 @@ npm start
 npm run worker
 ```
 
-API 与前端同源；APP_ORIGIN 必须与地址栏一致。`EXA_API_KEY` 未配置时规划明确缺少检索来源，不生成假引用。
+API 与前端同源；APP_ORIGIN 必须与地址栏一致。`EXA_API_KEY` 控制可选的实时网络检索；未配置时明确标注网络检索不可用，已初始化的本地知识库仍可使用。
+
+## 规划知识库（RAG）
+
+正式应用使用 PostgreSQL 的 **pgvector** 保存知识向量，用本地中文模型 `Xenova/bge-small-zh-v1.5` 生成 512 维 embedding。先按 [RAG 指南](docs/rag.md) 安装与 PostgreSQL 版本匹配的 pgvector，并准备数据库连接，然后在仓库根目录运行：
+
+```sh
+npm run knowledge -- setup
+npm run knowledge -- seed
+npm run knowledge -- status
+npm run knowledge -- search '我想每天练英语阅读，但容易忘记单词'
+```
+
+`setup` 创建知识表及索引；`seed` 导入 8 条附原研究或官方链接的规划参考。首次运行 `seed` 会将公开模型文件下载到 `var/models/`，后续使用本地缓存，无需另配 embedding API 密钥。初始化后重启 API 和 worker。
+
+支持导入 UTF-8 Markdown、纯文本和 JSON 文档：
+
+```sh
+npm run knowledge -- import /完整路径/学习方法.md
+npm run knowledge -- import /完整路径/学习笔记.txt
+npm run knowledge -- import /完整路径/参考资料.json
+# 指定账号的私人资料：
+npm run knowledge -- import /完整路径/个人笔记.md --user 用户UUID
+```
+
+默认导入管理员维护的共享知识；JSON 字段、私人资料权限、删除与模型配置见 [完整 RAG 说明](docs/rag.md)。聊天步骤卡片和目标路线中的「规划依据」默认折叠，可展开查看短来源、适用理由及原文链接。检索资料用于辅助规划，不替代用户的完成条件或成果评估。
+
+工作台的同名 CLI 使用独立 **file** 向量索引，不连接生产数据库；请在 `tools/agent-workbench/` 内运行。两套环境的 `.env` 密钥及各自 `var/` 下的索引、模型缓存、对话都不入 Git。
 
 ## 已实现
 
@@ -100,6 +127,7 @@ npm run test:e2e
 - [API 与命令](docs/api.md)
 - [部署、HTTPS、更新与备份](docs/deployment.md)
 - [运行、审核与恢复](docs/operations.md)
+- [规划知识库、资料导入与检索](docs/rag.md)
 - [验收范围与需求对应](docs/acceptance.md)
 - [原有协作文档](docs/README.md)
 

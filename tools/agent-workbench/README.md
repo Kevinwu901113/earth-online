@@ -27,6 +27,33 @@ ssh -N -L 3188:127.0.0.1:3188 USER@HOST -p PORT
 
 `LAB_PORT` 控制端口；模型、供应商、推理强度和 token 上限见 `.env.example`。每次 Agent 尝试超时目前在 `engine.js` 固定为 120 秒。`EXA_API_KEY` 可选，未配置时实时检索不可用；`resources.js` 中少量人工核实的入口不等于实时搜索或已读取具体题目。
 
+## 本地规划知识库（RAG）
+
+工作台复用仓库的 `packages/planning-rag/` 检索代码，使用独立的 **file 向量索引**，不连接生产数据库，也不需要 pgvector。中文 embedding 由本地 `Xenova/bge-small-zh-v1.5` 模型生成；`EXA_API_KEY` 仅影响实时网络搜索，不影响本地知识检索。
+
+在本目录初始化并检查知识库：
+
+```sh
+npm run knowledge -- setup
+npm run knowledge -- seed
+npm run knowledge -- status
+npm run knowledge -- search '我想学习英语，怎么安排复习和练习'
+```
+
+CLI 固定使用 `--backend=file --namespace=workbench`，索引保存在本目录的 `var/knowledge/workbench.json`。`seed` 导入 8 条原创规划参考；首次下载公开中文模型到本目录的 `var/models/`，以后从本地缓存加载，无需额外 embedding API 密钥。空库首次规划可自动导入内置参考；提前运行 `seed` 可避免第一条请求等待模型下载。
+
+可导入自己的 UTF-8 Markdown、纯文本或 JSON，JSON 支持单个文档或文档数组：
+
+```sh
+npm run knowledge -- import /完整路径/学习方法.md
+npm run knowledge -- import /完整路径/学习笔记.txt
+npm run knowledge -- import /完整路径/参考资料.json
+```
+
+对话与规划预览中的「规划依据」默认折叠，展开后查看命中数量、索引信息、短来源与适用理由，并可打开原文。界面不铺开检索全文；来源用于辅助规划，不作为能力认证依据。`earth-tools` 开关包含只读 `earth_knowledge` 工具。
+
+本目录的 `.env` 密钥和 `var/` 下的向量索引、模型缓存及对话不入 Git。完整导入格式、资料权限、模型配置及正式应用的 pgvector 初始化见 [RAG 使用说明](../../docs/rag.md)。
+
 ## 协作者怎么测试
 
 1. 新建对话，像真实用户一样输入「我想练英文」等目的，不预填规划字段。
@@ -45,7 +72,7 @@ ssh -N -L 3188:127.0.0.1:3188 USER@HOST -p PORT
 
 | 开关 | 实际作用 |
 | --- | --- |
-| `earth-tools` | 挂载 `earth_context`、`earth_standards`、`earth_search` |
+| `earth-tools` | 挂载 `earth_context`、`earth_standards`、`earth_search`、只读 `earth_knowledge` |
 | `skills` | 挂载 DSH skill、filesystem、tool-skill 组件，只复制所选技能到本轮目录 |
 
 业务技能位于 `skills/`：`goal-intake`（目标澄清）、`skill-tree-design`（能力树）、`task-design`（详细任务）、`plan-adjustment`（反馈调整）。界面开关是本轮挂载/卸载，不是 npm 包下载、安装或删除。外部 MCP 服务及 DSH 等待式提问组件未接入；多轮询问通过工作台聊天完成。
@@ -89,6 +116,7 @@ POST 要求 `X-Lab-Token`，取自本机 status 接口，不要将 token 放进�
 
 - `server.js`：HTTP、访问限制、单请求并发、任务状态。
 - `workbench.js`：对话持久化、能力目录、Agent 调用和自动重试。
+- `knowledge.js`：独立文件知识库、检索上下文与来源元信息；检索实现共用 `../../packages/planning-rag/`。
 - `intake.js`：五轮收口、上下文压缩、自述点亮引用与失败诊断。
 - `workbench-contract.js`、`plan-v2.js`：协议与语义校验。
 - `public/`：聊天、能力开关、树和任务展示。
@@ -110,8 +138,8 @@ node export-contracts.js
 
 ## 隔离与移除
 
-本目录有自己的 package.json 和 lockfile，根项目启动及部署不依赖它。当前服务器试验副本在 `/opt/earth-generation-lab-20261007`，临时 systemd 服务名 `earth-generation-lab-20261007.service`，复用服务器 Node、依赖及模型环境文件；未设置开机启动。仓库安装按上面的 npm ci 独立安装即可。
+本目录有自己的 package.json 和 lockfile，根项目启动及部署不依赖工作台。工作台检索依赖仓库内的 `packages/planning-rag/`，运行时使用自己的文件索引，安装时须保留该共享代码目录。当前服务器试验副本在 `/opt/earth-generation-lab-20261007`，临时 systemd 服务名 `earth-generation-lab-20261007.service`，复用服务器 Node、依赖及模型环境文件；未设置开机启动。仓库安装按上面的 npm ci 独立安装即可。
 
-停止本地进程用 Ctrl+C；服务器现有实例用 `systemctl stop earth-generation-lab-20261007.service`，随后关闭对应 SSH 转发。需要保留结果时先备份独立目录的 `var/workbench/`。
+停止本地进程用 Ctrl+C；服务器现有实例用 `systemctl stop earth-generation-lab-20261007.service`，随后关闭对应 SSH 转发。需要保留结果及导入资料时先备份独立目录的 `var/workbench/` 和 `var/knowledge/`。
 
 确认停止且已备份后，可删除工作台独立目录。不要删除复用的生产 Node、node_modules 或环境文件。要从仓库移除，删除 `tools/agent-workbench/`、`.github/workflows/agent-workbench.yml` 和根 README 的工作台章节即可；正式数据库无需迁移或回滚。若只想保留解析能力，可单独迁移协议和校验代码后再移除界面。

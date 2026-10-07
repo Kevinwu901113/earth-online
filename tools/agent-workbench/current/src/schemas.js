@@ -39,25 +39,21 @@ export const stageSchema = z
     standardVersion: z.number().int().positive().nullable().default(null),
   })
   .strict();
+export const sourceSchema = z
+  .object({
+    title: text(200),
+    url: z.url().refine((v) => /^https?:\/\//.test(v)),
+    note: text(500),
+    retrievedAt: z.iso.datetime().optional(),
+  })
+  .strict();
 export const routeSchema = z
   .object({
     summary: text(2000),
     minutes: z.number().int().min(5).max(240),
     stat: z.number().int().min(0).max(4),
     stages: z.array(stageSchema).min(1).max(8),
-    sources: z
-      .array(
-        z
-          .object({
-            title: text(200),
-            url: z.url().refine((v) => /^https?:\/\//.test(v)),
-            note: text(500),
-            retrievedAt: z.iso.datetime().optional(),
-          })
-          .strict(),
-      )
-      .max(15)
-      .default([]),
+    sources: z.array(sourceSchema).max(15).default([]),
   })
   .strict();
 export const assessmentSchema = z
@@ -185,6 +181,7 @@ export const guidanceSchema = z
   .object({
     title: text(120),
     summary: text(300),
+    sources: z.array(sourceSchema).max(6).optional(),
     steps: z
       .array(
         z

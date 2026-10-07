@@ -13,7 +13,7 @@ const messages = Object.freeze({
   output_schema_invalid:
     "模型返回的内容格式不符合要求，未生成可用结果；内容已保存，可重试。",
   source_unverified:
-    "路线引用了未经检索确认的来源，未采用本次结果；可重新规划。",
+    "规划引用了未经检索确认的来源，未采用本次结果；可重新规划。",
   job_interrupted: "执行中断，结果未提交；原始内容已保留，请重试。",
   internal_error:
     "处理未完成；内容已保存，请重试。若仍失败，请提供任务编号排查。",
@@ -70,7 +70,7 @@ function pickFields(value, fields) {
 // fields or admitting commands; the published model contract stays strict.
 function projectGuidance(value) {
   if (!isObject(value)) return value;
-  const guidance = pickFields(value, ["title", "summary", "steps"]);
+  const guidance = pickFields(value, ["title", "summary", "steps", "sources"]);
   if (Array.isArray(guidance.steps))
     guidance.steps = guidance.steps.map((step) =>
       isObject(step)
@@ -78,6 +78,21 @@ function projectGuidance(value) {
         : step,
     );
   return guidance;
+}
+
+export function verifiedSources(citations, retrieved) {
+  const sources = new Map(retrieved.map((source) => [source.url, source]));
+  return citations.map((citation) => {
+    const source = sources.get(citation.url);
+    if (!source)
+      throw new AgentError("source_unverified", { phase: "validation" });
+    const { retrievedAt: _modelTimestamp, ...fields } = citation;
+    return {
+      ...fields,
+      title: (source.title || citation.title).slice(0, 200),
+      ...(source.retrievedAt ? { retrievedAt: source.retrievedAt } : {}),
+    };
+  });
 }
 
 export function validateOutput(kind, value) {

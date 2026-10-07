@@ -28,6 +28,11 @@ export function config(env = process.env) {
         .default(16384),
       DEEPSEEK_API_KEY: z.string().optional(),
       EXA_API_KEY: z.string().optional(),
+      RAG_ENABLED: z.enum(["true", "false"]).default("true"),
+      RAG_BACKEND: z.enum(["pgvector", "file"]).default("pgvector"),
+      RAG_DATA_DIR: z.string().min(1).default("var/knowledge"),
+      RAG_MODEL: z.string().min(1).default("Xenova/bge-small-zh-v1.5"),
+      RAG_MODEL_CACHE_DIR: z.string().min(1).default("var/models"),
       DEEPSEEK_BASE_URL: z
         .string()
         .url()

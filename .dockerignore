@@ -8,3 +8,7 @@ outputs
 test-results
 playwright-report
 backups
+**/node_modules
+**/var
+**/.env
+**/.env.*

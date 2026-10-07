@@ -15,9 +15,23 @@ export function renderRadial(root,plan){
  for(const n of nodes){const p=positions.get(n.id),g=document.createElementNS(ns,'g');g.setAttribute('transform',`translate(${p.x},${p.y})`);g.setAttribute('class','skill-dot '+n.kind+' '+(n.baseline?.status==='lit'?'lit':'unlit'));g.setAttribute('role','button');g.setAttribute('tabindex','0');g.setAttribute('aria-label',n.name);const circle=document.createElementNS(ns,'circle');circle.setAttribute('r',n.kind==='core'?29:21);const icon=document.createElementNS(ns,'text');icon.setAttribute('text-anchor','middle');icon.setAttribute('dominant-baseline','central');icon.textContent=symbols[n.icon]||'◇';g.append(circle,icon);g.onclick=()=>show(n,g);g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show(n,g)}};svg.append(g)}
  wrap.append(svg);root.append(wrap,detail);
 }
-export function renderV2(root,plan,tab){
- if(tab==='plan'){root.append(el('p','能力地图 · 点击节点探索','muted'));renderRadial(root,plan);const note=el('details');note.append(el('summary','规划假设'),el('p',plan.assumptions.join('\n'),'muted'));root.append(note);return}
+const brief=(value,max=150)=>{const text=String(value??'').replace(/\s+/g,' ').trim();if(text.length<=max)return text;return text.match(new RegExp(`^.{1,${max-10}}?[。！？!?]`,'u'))?.[0]??text.slice(0,max-1)+'…'};
+export function renderRetrieval(root,retrieval){
+ if(!retrieval||typeof retrieval!=='object')return;
+ const seen=new Set(),sources=(Array.isArray(retrieval.sources)?retrieval.sources:[]).flatMap(s=>{if(!s||typeof s.url!=='string')return [];try{const url=new URL(s.url);if(!['https:','http:'].includes(url.protocol)||seen.has(url.href))return [];seen.add(url.href);return [{...s,url:url.href,domain:url.hostname.replace(/^www\./,'')}]}catch{return []}});
+ const hitCount=Number.isSafeInteger(retrieval.hitCount)&&retrieval.hitCount>=0?retrieval.hitCount:sources.length;
+ const box=el('details',undefined,'retrieval-sources');box.append(el('summary',`规划依据 · ${hitCount} 条检索命中`));
+ const index=typeof retrieval.index==='string'?retrieval.index:retrieval.index?.name??retrieval.index?.id??retrieval.indexName;
+ const version=typeof retrieval.index==='object'?retrieval.index?.version:retrieval.indexVersion;
+ const meta=[index?`知识索引：${brief(index,80)}`:null,version?`版本 ${brief(version,50)}`:null,retrieval.backend?`检索方式：${brief(retrieval.backend,60)}`:null,Number.isSafeInteger(retrieval.chunkCount)?`${retrieval.chunkCount} 个索引片段`:null].filter(Boolean);
+ if(meta.length)box.append(el('p',meta.join(' · '),'retrieval-meta'));
+ if(!sources.length)box.append(el('p',retrieval.available===false?'本次知识检索不可用。':'本次没有可显示的检索来源。','muted'));
+ for(const s of sources){const card=el('article',undefined,'retrieval-source'),link=el('a',brief(s.title||s.domain,90)+' ↗');link.href=s.url;link.target='_blank';link.rel='noopener noreferrer';link.title=String(s.title??s.domain);card.append(link);const metadata=[s.domain,s.retrievedAt&&Number.isFinite(Date.parse(s.retrievedAt))?'检索 '+new Date(s.retrievedAt).toISOString().slice(0,10):null].filter(Boolean);card.append(el('small',metadata.join(' · ')));if(s.note)card.append(el('p',brief(s.note)));box.append(card)}root.append(box);
+}
+export function renderV2(root,plan,tab,retrieval=null){
+ if(tab==='plan'){root.append(el('p','能力地图 · 点击节点探索','muted'));renderRadial(root,plan);const note=el('details');note.append(el('summary','规划假设'),el('p',plan.assumptions.join('\n'),'muted'));root.append(note);renderRetrieval(root,retrieval);return}
  root.append(el('h2','学习安排','plan-title'),el('p',plan.summary,'muted'));
  const strategy=el('section',undefined,'strategy');strategy.append(el('h3','为什么这样安排'));for(const s of plan.strategy){const d=el('details');d.append(el('summary',s.name+' · '+s.timing),el('p',s.approach),el('small',s.skillIds.map(id=>plan.skills.find(n=>n.id===id)?.name).join(' / ')));strategy.append(d)}root.append(strategy);
  for(const t of plan.tasks){const card=el('article',undefined,'task');card.append(el('span',t.minutes+' 分钟','minutes'),el('h3',t.name),el('p',t.purpose,'muted'));const ol=el('ol');for(const a of t.actions){const li=el('li');li.append(el('strong',a.name+' · '+a.minutes+' 分钟'),el('p',a.detail));ol.append(li)}card.append(ol);for(const id of t.resourceIds){const r=plan.resources.find(r=>r.id===id);if(!r)continue;const box=el('div',undefined,'material');if(r.url&&/^https?:\/\//.test(r.url)){const link=el('a',r.name+' ↗');link.href=r.url;link.target='_blank';link.rel='noopener noreferrer';box.append(link)}else box.append(el('strong',r.name));box.append(el('p',r.locator),el('small',r.availability==='needs_user'?'待确认材料':r.availability==='verified_link'?'已核实入口 · 具体材料见说明':r.availability==='self_created'?'自编练习':'用户现有材料'));card.append(box)}if(t.readiness==='needs_material')card.append(el('p','需要补充：'+t.materialQuestion,'material-question'));root.append(card)}
+ renderRetrieval(root,retrieval);
 }

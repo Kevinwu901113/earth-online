@@ -7,7 +7,15 @@ import { Repository } from "./repository.js";
 import { DshAgent } from "./agent.js";
 import { failureFor } from "./agent-output.js";
 import { DomainError } from "./domain.js";
-export async function runOne(repo, agent, timeoutMs = 120000, signal) {
+import { createKnowledge } from "@earth-online/planning-rag";
+import { planningQuery, retrieveKnowledge } from "./planning-context.js";
+export async function runOne(
+  repo,
+  agent,
+  timeoutMs = 120000,
+  signal,
+  knowledge,
+) {
   signal?.throwIfAborted();
   await repo.expire();
   const job = await repo.claim(timeoutMs);
@@ -30,6 +38,13 @@ export async function runOne(repo, agent, timeoutMs = 120000, signal) {
     context.standards = (
       await repo.pool.query("SELECT id,version,body FROM public_standards")
     ).rows;
+    if (["route", "chat"].includes(job.kind))
+      context.knowledge = await retrieveKnowledge(
+        knowledge,
+        planningQuery(job, context),
+        job.user_id,
+        { signal: abort.signal },
+      );
     const out = await agent.run(job, context, abort.signal);
     await repo.finish(job, out);
   } catch (e) {
@@ -61,6 +76,18 @@ async function main() {
   await cache.connect();
   const repo = new Repository(pool, cache),
     agent = new DshAgent(cfg),
+    knowledge =
+      cfg.RAG_ENABLED === "true"
+        ? createKnowledge({
+            backend: cfg.RAG_BACKEND,
+            databaseUrl: cfg.DATABASE_URL,
+            dataDir: cfg.RAG_DATA_DIR,
+            model: cfg.RAG_MODEL,
+            modelCacheDir: cfg.RAG_MODEL_CACHE_DIR,
+            namespace: "main",
+            sourceOrigin: cfg.APP_ORIGIN,
+          })
+        : null,
     stop = new AbortController();
   for (const sig of ["SIGTERM", "SIGINT"])
     process.once(sig, () => stop.abort());
@@ -72,6 +99,7 @@ async function main() {
           agent,
           cfg.DSH_TIMEOUT_MS,
           stop.signal,
+          knowledge,
         );
         if (!worked) await delay(500, undefined, { signal: stop.signal });
       } catch (e) {
@@ -81,6 +109,7 @@ async function main() {
       }
     }
   } finally {
+    await knowledge?.close();
     await cache.close();
     await pool.end();
   }

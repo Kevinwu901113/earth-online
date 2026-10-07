@@ -1,6 +1,9 @@
 services:
   postgres:
-    image: postgres:17-alpine
+    image: earth-online-postgres:17-alpine-pgvector0.8.6
+    build:
+      context: .
+      dockerfile: Dockerfile.pgvector
     environment:
       POSTGRES_DB: earth_online
       POSTGRES_USER: earth

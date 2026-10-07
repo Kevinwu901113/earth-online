@@ -10,6 +10,11 @@ x-app: &app
     APP_ORIGIN: https://${APP_DOMAIN:?Set APP_DOMAIN in .env}
     DATABASE_URL: postgres://earth:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/earth_online
     REDIS_URL: redis://redis:6379
+    RAG_ENABLED: ${RAG_ENABLED:-true}
+    RAG_BACKEND: ${RAG_BACKEND:-pgvector}
+    RAG_DATA_DIR: /app/var/knowledge
+    RAG_MODEL_CACHE_DIR: /app/var/models
+  volumes: ["app-data:/app/var"]
   init: true
   stop_grace_period: 30s
   logging: &logging
@@ -17,7 +22,10 @@ x-app: &app
     options: { max-size: "10m", max-file: "3" }
 services:
   postgres:
-    image: postgres:17-alpine
+    image: earth-online-postgres:17-alpine-pgvector0.8.6
+    build:
+      context: .
+      dockerfile: Dockerfile.pgvector
     environment:
       POSTGRES_DB: earth_online
       POSTGRES_USER: earth
@@ -50,7 +58,7 @@ services:
   api:
     <<: *app
     depends_on:
-      migrate: { condition: service_completed_successfully }
+      knowledge-init: { condition: service_completed_successfully }
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "scripts/healthcheck.js"]
@@ -62,8 +70,17 @@ services:
     <<: *app
     command: ["node", "src/worker.js"]
     depends_on:
-      migrate: { condition: service_completed_successfully }
+      knowledge-init: { condition: service_completed_successfully }
     restart: unless-stopped
+  knowledge-init:
+    <<: *app
+    command:
+      - sh
+      - -c
+      - 'if [ "$$RAG_ENABLED" = "false" ]; then echo "Knowledge initialization disabled"; else node packages/planning-rag/cli.js setup && node packages/planning-rag/cli.js seed; fi'
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    restart: "no"
   caddy:
     image: caddy:2-alpine
     environment:
@@ -79,5 +96,6 @@ services:
     logging: *logging
 volumes:
   postgres-data:
+  app-data:
   caddy-data:
   caddy-config:
