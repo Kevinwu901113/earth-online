@@ -1,5 +1,32 @@
 # Earth Agent 工作台
 
+图标库：`/icon-library.html` 可搜索 87 个语义图标。`public/skill-icons.js` 是 Agent 枚举和前端渲染的共同来源；新增图标后运行 `node export-contracts.js`。新增内容沿用本地 Lucide，不访问第三方 CDN。历史节点继续使用原图标，新的生成可以选择更具体的图标。
+
+
+## 长期技能节点规则（2026-10-08 修订）
+
+新增节点仅允许 domain/ability，milestone 固定为 null，单轮最多 8 个，允许零新增。目标、考试分数、阶段和任务步骤留在目标/任务系统。英语采用“语言 → 英语 → 听说读写”，健身采用“体能 → 力量/耐力”，不强制相同层数。多个目标共享能力节点；节点详情显示关联目标。普通任务不触发细分，只有明确的长期专精需求才扩展。
+
+解析器拒绝 milestone 类型、明显分数/阶段节点、超量新增及使用听说读写图标直接挂语言的扁平结构。语义同义合并和适当粒度仍依赖 Agent 判断，机器规则不能穷尽语义。旧对话和旧里程碑历史不自动删除，使用新对话验证新版规则。
+
+## 2026-10-08：个人技能树增量协议
+
+新生成使用 `earth.agent.v3`，内含 `earth.plan.v3`（当前任务批次）与 `earth.tree.patch.v1`（分支变更）。v1/v2 历史响应仍可读取。以下旧版 v2 字段说明仅适用于历史响应；最新契约以 `/api/workbench/contracts` 和导出的 JSON Schema 为准。
+
+个人树根节点 `self` 是用户，一级固定 `body` 身心、`mind` 认知、`practice` 实践，预设二级入口由 `tree-patch.js` 提供。Agent 从 `context.personalTree` 获取已有节点/目标和 revision，并回填服务端生成的 `treeRequestId`。
+
+补丁包含 `baseRevision`、`requestId`、`goalId`、`addNodes`、`reuseNodeIds`、`updateNodes`。只能新增非核心节点；复用必须引用已存在 ID；说明修改只支持已复用的非骨架节点的 description。不能删除节点、迁移父节点、改变已有 baseline/进度或生成第四个一级分支。同父级同名节点会被拒绝；同义但不同名称仍依赖 Agent 判断，当前没有自动语义合并。
+
+目标独立保存在 `conversation.tree.goals`，任务按目标与请求存入 `taskBatches`，旧批次保留；本实验没有任务完成或 XP 结算。所有新任务、策略和目标引用必须明确指向本次新增或复用的具体能力。未知不等于不会，新增节点点亮仍要求用户原话。
+
+`applyTreePatch` 是纯函数事务：先检查完整补丁及任务，包括 ID、图关系、材料与时间规则，再返回新树。版本冲突拒绝；相同 requestId 与相同载荷重放不再增加版本或任务批次，改载荷则拒绝。工作台将树、任务批次与对话结果一次原子改名保存。失败恢复仍有运行诊断，但不会写入半棵树。
+
+UI 展示合并后的个人树：一级方向固定、点击逐层展开、可拖动缩放，节点默认只显示图标。`result.plan` 是供旧渲染器使用的合并视图，`result.agentPlan` 与 `result.treePatch` 是原始可解析增量输出；JSON 导出使用后两者，不混淆为 Agent 返回完整树。
+
+范围：一段工作台对话对应一棵独立测试树，连续输入目标会累积；新建对话另起一棵树。没有正式账号级共享或跨对话合并。旧 v2 树不会自动迁移，原响应保留在历史中。每次规划收口后，下一条新的普通需求会开启新的信息收集周期，最多五轮；重试和额外背景不会重置。未收口的回答继续当前周期。旧对话通过最后一条助手消息兼容识别边界；预算只读取当前周期的明确时间。是否需要追问由 Agent 结合已有事实判断，关键缺口优先 clarify，而非先建任务再补数字。
+
+修改入口：`tree-patch.js`（骨架/补丁/合并）、`workbench-contract.js`（v3 响应和提示）、`workbench.js`（调用与持久化）、`public/personal-tree-ui.js`（个人树展示）。执行 `npm test` 和 `node export-contracts.js`，后者同时导出 `tree-patch.schema.json`。图标采用仓库既有 Lucide，许可证见 `public/LICENSE-lucide.txt`。
+
 独立实验工具，用来测试用户只输入自然语言时，DSH Agent 能否收集必要信息并生成可解析的技能树、学习策略和详细任务。它不是正式网站的新版本，也不会写入正式用户、任务或 XP 数据。
 
 ## 快速运行
@@ -143,3 +170,6 @@ node export-contracts.js
 停止本地进程用 Ctrl+C；服务器现有实例用 `systemctl stop earth-generation-lab-20261007.service`，随后关闭对应 SSH 转发。需要保留结果及导入资料时先备份独立目录的 `var/workbench/` 和 `var/knowledge/`。
 
 确认停止且已备份后，可删除工作台独立目录。不要删除复用的生产 Node、node_modules 或环境文件。要从仓库移除，删除 `tools/agent-workbench/`、`.github/workflows/agent-workbench.yml` 和根 README 的工作台章节即可；正式数据库无需迁移或回滚。若只想保留解析能力，可单独迁移协议和校验代码后再移除界面。
+
+
+技能树解析合并器已提升到 `src/skill-tree`，工作台的 tree-patch.js 仅转出共享模块。正式站使用同一校验和合并逻辑，工作台仍不写正式账号数据库；移除 tools/agent-workbench 不影响正式技能树。工作台运行时须保留仓库中的共享 src/skill-tree 与 public/skill-tree 目录。

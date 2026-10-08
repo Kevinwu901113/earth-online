@@ -1,3 +1,5 @@
+import { initialTree, applyTreePatch } from "./skill-tree/tree-patch.js";
+import { skillGoalId } from "./skill-tree/generation.js";
 import { randomUUID } from "node:crypto";
 import { validateOutput } from "./agent-output.js";
 export class DomainError extends Error {
@@ -30,6 +32,8 @@ export const initialState = () => ({
   messages: [],
   candidates: [],
   achievements: [],
+  personalTree: initialTree(),
+  skillPlans: {},
   levelXp: 0,
 });
 const find = (list, id) => {
@@ -118,6 +122,14 @@ export function applyCommand(
         preferences: cmd.preferences,
       };
       break;
+    case "skills.generate": {
+      const g = findGoal(s, cmd.id);
+      if (!["draft", "active", "paused"].includes(g.status))
+        throw new DomainError("目标已结束");
+      result.jobId = job("skills", { goalId: g.id, revision: g.revision });
+      g.skillJobId = result.jobId;
+      break;
+    }
     case "goal.create": {
       const g = {
         id: randomUUID(),
@@ -176,6 +188,7 @@ export function applyCommand(
       g.revision++;
       g.status = "active";
       g.draft = null;
+      g.skillJobId = job("skills", { goalId: g.id, revision: g.revision });
       note(s, "route", "路线已确认", route.summary, now, { goal: g.id });
       break;
     }
@@ -550,7 +563,36 @@ export function settleJob(
   const rewards = [];
   output = validateOutput(job.kind, output);
   let result = output;
-  if (job.kind === "route") {
+  if (job.kind === "skills") {
+    const g = findGoal(s, job.input.goalId);
+    if (
+      g.revision !== job.input.revision ||
+      g.skillJobId !== job.id ||
+      !["draft", "active", "paused"].includes(g.status)
+    )
+      throw new DomainError("目标已变化，请重新生成能力分支");
+    if (
+      output.treePatch.goalId !== skillGoalId(g.id) ||
+      output.plan.goal.title !== g.title ||
+      output.plan.goal.target !== g.criterion ||
+      output.plan.goal.minutes > g.minutes
+    )
+      throw new DomainError("技能规划必须对应当前目标和时间预算");
+    const userStatements = [
+      g.base,
+      ...s.messages.filter((m) => m.role === "user").map((m) => m.content),
+    ];
+    const merged = applyTreePatch(
+      s.personalTree ?? initialTree(),
+      output.treePatch,
+      output.plan,
+      { requestId: job.id, userStatements },
+    );
+    s.personalTree = merged.tree;
+    s.skillPlans ??= {};
+    s.skillPlans[g.id] = { ...output.plan, updatedAt: now };
+    result = { treeRevision: merged.tree.revision, goalId: g.id };
+  } else if (job.kind === "route") {
     const g = findGoal(s, job.input.goalId);
     if (
       g.revision !== job.input.revision ||

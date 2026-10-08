@@ -1,3 +1,4 @@
+import { renderPersonalTree } from "./skill-tree/personal-tree-ui.js";
 (() => {
   "use strict";
   const root = document.getElementById("earth-journey"),
@@ -264,6 +265,20 @@
         (name) => $(`.journey-page .${name}`)?.open,
       );
       $(".journey-page").innerHTML = pages[page]();
+      if (page === "skills" && state.personalTree) {
+        const plans = Object.values(state.skillPlans ?? {}),
+          latest = plans.at(-1);
+        renderPersonalTree(
+          $("#personal-tree"),
+          {
+            skills: state.personalTree.nodes,
+            targetSkillIds: latest?.targetSkillIds ?? [],
+            tasks: latest?.tasks ?? [],
+          },
+          state.personalTree.goals,
+        );
+      }
+
       for (const name of expanded) {
         const section = $(`.journey-page .${name}`);
         if (section) section.open = true;
@@ -474,6 +489,26 @@
   }
 
   const pages = {
+    skills: () =>
+      heading("ABILITIES", "我的技能树") +
+      '<p class="prose">不同目标，共用一棵能力树。点击分支探索，滚轮缩放，拖动平移。</p><div id="personal-tree"></div>' +
+      state.goals
+        .filter(
+          (g) =>
+            !g.deletedAt && ["draft", "active", "paused"].includes(g.status),
+        )
+        .map((g) => {
+          const plan = state.skillPlans?.[g.id],
+            job = jobs.find((j) => j.id === g.skillJobId),
+            pending = job && ["queued", "running"].includes(job.status);
+          return `<section class="skill-goal"><h4>${esc(g.title)}</h4>${pending ? '<p role="status">正在生成能力分支…</p>' : btn(plan ? "更新能力分支" : "生成能力分支", "generateSkills", g.id)}${job?.status === "failed" ? '<p role="alert">本次生成未完成，可重新生成；已有技能保留。</p>' : ""}${plan ? prose(plan.summary) + plan.tasks.map((t) => `<details><summary>${esc(t.name)} · ${t.minutes} 分钟</summary>${prose(t.purpose)}<ol>${t.actions.map((a) => `<li><strong>${esc(a.name)} · ${a.minutes} 分钟</strong>${prose(a.detail)}</li>`).join("")}</ol>${t.materialQuestion ? prose(t.materialQuestion) : ""}</details>`).join("") : ""}</section>`;
+        })
+        .join("") +
+      (!state.goals.some((g) => !g.deletedAt)
+        ? '<p class="prose">先在任务日志建立目标。确认路线后，Agent 会为你拓展对应能力分支。</p>'
+        : "") +
+      btn("后台任务", "jobs"),
+
     quests: () =>
       heading("QUESTS", "任务日志") +
       dayTimeline() +
@@ -614,9 +649,13 @@
     return `<div class="planning-status" role="status"><b>${planningTitle(g)}</b>${prose(message)}${g.revision && canRetryPlanning(g) ? "<p>已确认的路线仍然保留。</p>" : ""}</div>`;
   }
   function sourceText(value, max = 150) {
-    const text = String(value ?? "").replace(/\s+/g, " ").trim();
+    const text = String(value ?? "")
+      .replace(/\s+/g, " ")
+      .trim();
     if (text.length <= max) return text;
-    const sentence = text.match(new RegExp(`^.{1,${max - 10}}?[。！？!?]`, "u"))?.[0];
+    const sentence = text.match(
+      new RegExp(`^.{1,${max - 10}}?[。！？!?]`, "u"),
+    )?.[0];
     return sentence ?? `${text.slice(0, max - 1)}…`;
   }
   function sources(items, { empty = true } = {}) {
@@ -625,12 +664,18 @@
       if (!s || typeof s.url !== "string") return [];
       try {
         const url = new URL(s.url);
-        if (!["http:", "https:"].includes(url.protocol) || seen.has(url.href)) return [];
+        if (!["http:", "https:"].includes(url.protocol) || seen.has(url.href))
+          return [];
         seen.add(url.href);
-        return [{ ...s, url: url.href, domain: url.hostname.replace(/^www\./, "") }];
-      } catch { return []; }
+        return [
+          { ...s, url: url.href, domain: url.hostname.replace(/^www\./, "") },
+        ];
+      } catch {
+        return [];
+      }
     });
-    if (!references.length) return empty ? '<p class="tiny-note">暂无可显示的规划依据。</p>' : "";
+    if (!references.length)
+      return empty ? '<p class="tiny-note">暂无可显示的规划依据。</p>' : "";
     return `<details class="source-disclosure" data-chat-details="sources"><summary><span>规划依据</span><small>${references.length} 条来源</small></summary><div class="source-list">${references.map((s) => `<article class="source-card"><a class="source-title" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" title="${esc(s.title ?? s.domain)}">${esc(sourceText(s.title || s.domain, 90))}<span aria-hidden="true"> ↗</span></a><div class="source-meta"><span>${esc(s.domain)}</span>${s.retrievedAt && Number.isFinite(Date.parse(s.retrievedAt)) ? `<time datetime="${esc(s.retrievedAt)}">检索 ${esc(localDate(s.retrievedAt))}</time>` : ""}</div>${s.note ? `<p class="source-reason">${esc(sourceText(s.note))}</p>` : ""}</article>`).join("")}</div></details>`;
   }
   function goalOptions(value) {
@@ -1180,6 +1225,11 @@
     );
   }
   const actions = {
+    generateSkills: async (id) => {
+      await send({ type: "skills.generate", id });
+      toast("正在生成能力分支");
+    },
+
     login: () => auth(),
     register: () => auth("register"),
     newGoal: () => newGoal(),

@@ -1,0 +1,268 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "earth.tree.patch.v1"
+    },
+    "baseRevision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "requestId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "goalId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+    },
+    "addNodes": {
+      "maxItems": 8,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 800
+          },
+          "icon": {
+            "type": "string",
+            "enum": [
+              "body",
+              "mind",
+              "action",
+              "sport",
+              "emotion",
+              "focus",
+              "language",
+              "logic",
+              "information",
+              "social",
+              "home",
+              "money",
+              "work",
+              "art",
+              "strength",
+              "stamina",
+              "mobility",
+              "vocabulary",
+              "listening",
+              "reading",
+              "writing",
+              "speaking",
+              "grammar",
+              "practice",
+              "knowledge",
+              "swimming",
+              "running",
+              "cycling",
+              "hiking",
+              "climbing",
+              "yoga",
+              "balance",
+              "recovery",
+              "sleep",
+              "meditation",
+              "nutrition",
+              "firstaid",
+              "cooking",
+              "baking",
+              "coffee",
+              "cleaning",
+              "organizing",
+              "repair",
+              "gardening",
+              "driving",
+              "navigation",
+              "sewing",
+              "budgeting",
+              "saving",
+              "investing",
+              "research",
+              "mathematics",
+              "science",
+              "history",
+              "geography",
+              "memory",
+              "criticalthinking",
+              "planning",
+              "timemanagement",
+              "translation",
+              "coding",
+              "data",
+              "spreadsheet",
+              "database",
+              "security",
+              "engineering",
+              "design",
+              "project",
+              "leadership",
+              "teamwork",
+              "negotiation",
+              "presentation",
+              "teaching",
+              "marketing",
+              "entrepreneurship",
+              "photography",
+              "video",
+              "drawing",
+              "music",
+              "singing",
+              "guitar",
+              "piano",
+              "theater",
+              "storytelling",
+              "craftsmanship"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "domain",
+              "ability"
+            ]
+          },
+          "parentId": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+          },
+          "prerequisites": {
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+            }
+          },
+          "baseline": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "const": "unlit"
+                  },
+                  "basis": {
+                    "type": "string",
+                    "const": "unknown"
+                  },
+                  "quote": {
+                    "type": "null"
+                  }
+                },
+                "required": [
+                  "status",
+                  "basis",
+                  "quote"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "const": "lit"
+                  },
+                  "basis": {
+                    "type": "string",
+                    "const": "self_report"
+                  },
+                  "quote": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 600
+                  }
+                },
+                "required": [
+                  "status",
+                  "basis",
+                  "quote"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "stat": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "milestone": {
+            "type": "null"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "icon",
+          "kind",
+          "parentId",
+          "prerequisites",
+          "baseline",
+          "stat",
+          "milestone"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "reuseNodeIds": {
+      "maxItems": 100,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+      }
+    },
+    "updateNodes": {
+      "maxItems": 20,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 800
+          }
+        },
+        "required": [
+          "id",
+          "description"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "baseRevision",
+    "requestId",
+    "goalId",
+    "addNodes",
+    "reuseNodeIds",
+    "updateNodes"
+  ],
+  "additionalProperties": false
+}

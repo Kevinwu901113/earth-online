@@ -5,8 +5,9 @@ export const nodeSchemaV2=z.object({id,name:text(100),description:text(800),icon
 export const resourceSchemaV2=z.object({id,name:text(150),kind:z.enum(['app','book','questions','website','user_material','self_created']),availability:z.enum(['verified_link','user_provided','needs_user','self_created']),url:z.url().nullable(),locator:text(800),purpose:text(600),question:z.string().max(500).nullable()}).strict();
 export const taskSchemaV2=z.object({id,name:text(150),skillIds:z.array(id).min(1).max(6),minutes:z.number().int().min(1).max(360),stat:z.number().int().min(0).max(4),purpose:text(600),resourceIds:z.array(id).max(6),readiness:z.enum(['ready','needs_material']),materialQuestion:z.string().max(500).nullable(),actions:z.array(z.object({name:text(180),minutes:z.number().int().min(1).max(360),detail:text(1800)}).strict()).min(1).max(8)}).strict();
 export const planSchemaV2=z.object({schemaVersion:z.literal('earth.plan.v2'),goal:z.object({title:text(150),target:text(800),minutes:z.number().int().min(1).max(360)}).strict(),summary:text(1200),assumptions:z.array(text(600)).max(12),coreSkillId:id,skills:z.array(nodeSchemaV2).min(3).max(24),targetSkillIds:z.array(id).min(1).max(8),strategy:z.array(z.object({name:text(100),skillIds:z.array(id).min(1).max(8),approach:text(1200),timing:text(300)}).strict()).min(1).max(8),resources:z.array(resourceSchemaV2).max(15),tasks:z.array(taskSchemaV2).min(1).max(8)}).strict();
-export function parsePlanV2(raw){
- const plan=planSchemaV2.parse(raw),issues=[],issue=(path,code)=>issues.push({path,code});
+export function parsePlanV2(raw,{personal=false,nodeSchema=nodeSchemaV2}={}){
+ const schema=personal?planSchemaV2.extend({skills:z.array(nodeSchema).min(3).max(500)}):planSchemaV2;
+ const plan=schema.parse(raw),issues=[],issue=(path,code)=>issues.push({path,code});
  const nodes=new Map(),resources=new Map();
  for(const [i,n]of plan.skills.entries()){if(nodes.has(n.id))issue(['skills',i],'duplicate_id');nodes.set(n.id,n);if((n.kind==='milestone')!==!!n.milestone)issue(['skills',i],'milestone_label_required')}
  const core=nodes.get(plan.coreSkillId);if(!core||core.kind!=='core'||core.parentId!==null||plan.skills.filter(n=>n.kind==='core').length!==1)issue(['coreSkillId'],'single_core_required');

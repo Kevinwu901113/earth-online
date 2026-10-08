@@ -1,3 +1,5 @@
+import { initialTree } from "./skill-tree/tree-patch.js";
+import { skillGoalId } from "./skill-tree/generation.js";
 import { createHash, randomUUID } from "node:crypto";
 import { transaction } from "./db.js";
 import { AgentError } from "./agent-output.js";
@@ -27,6 +29,8 @@ export class Repository {
     );
     if (!rows[0]) throw new DomainError("用户不存在", 404);
     const state = expireState(rows[0].state);
+    state.personalTree ??= initialTree();
+    state.skillPlans ??= {};
     for (const goal of state.goals) {
       const j = rows[0].route_jobs.find((j) => j.input.goalId === goal.id);
       goal.planning =
@@ -77,6 +81,13 @@ export class Repository {
       }
       if (Number(player.version) !== expectedVersion)
         throw new DomainError("数据已在其他页面更新，请刷新后重试");
+      if (command.type === "skills.generate") {
+        const pending = await c.query(
+          "SELECT id FROM agent_jobs WHERE user_id=$1 AND kind='skills' AND input->>'goalId'=$2 AND status IN ('queued','running') LIMIT 1",
+          [uid, command.id],
+        );
+        if (pending.rowCount) throw new DomainError("该目标的技能树正在生成");
+      }
       if (command.type === "goal.adjust") {
         const pending = await c.query(
           "SELECT id FROM agent_jobs WHERE user_id=$1 AND kind='route' AND input->>'goalId'=$2 AND status IN ('queued','running') LIMIT 1",
@@ -105,7 +116,7 @@ export class Repository {
           .filter((sub) => sub.goal === command.id)
           .map((sub) => sub.id);
         await c.query(
-          "UPDATE agent_jobs SET status='cancelled',lease_until=NULL,updated_at=now() WHERE user_id=$1 AND status IN ('queued','running') AND ((kind='route' AND input->>'goalId'=$2) OR (kind='assessment' AND input->>'submissionId'=ANY($3::text[])))",
+          "UPDATE agent_jobs SET status='cancelled',lease_until=NULL,updated_at=now() WHERE user_id=$1 AND status IN ('queued','running') AND ((kind IN ('route','skills') AND input->>'goalId'=$2) OR (kind='assessment' AND input->>'submissionId'=ANY($3::text[])))",
           [uid, command.id, submissions],
         );
       }
@@ -364,6 +375,20 @@ export class Repository {
       const message = state.messages.find((s) => s.id === job.input.messageId);
       if (message && !context.messages.some((s) => s.id === message.id))
         context.messages.push(message);
+    }
+    if (job?.kind === "skills") {
+      const goal = state.goals.find(
+        (g) => g.id === job.input.goalId && !g.deletedAt,
+      );
+      if (!goal) throw new DomainError("目标已删除");
+      context.goals = [compactGoal(goal)];
+      context.personalTree = {
+        revision: state.personalTree.revision,
+        nodes: state.personalTree.nodes,
+        goals: state.personalTree.goals,
+      };
+      context.treeRequestId = job.id;
+      context.skillGoalId = skillGoalId(goal.id);
     }
     return context;
   }

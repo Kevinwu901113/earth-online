@@ -47,7 +47,7 @@ test("workbench config cannot select production storage or credentials", () => {
   assert.equal(cfg.DATABASE_URL, "unused-in-lab");
   assert.equal(cfg.REDIS_URL, "unused-in-lab");
   assert.equal(cfg.DATA_DIR, labDataDir);
-  assert.match(labDataDir, /tools\/agent-workbench\/var\/$/);
+  assert.match(labDataDir, /tools[\\/]agent-workbench[\\/]var[\\/]$/);
 });
 
 test("live generation receives bounded RAG while result exposes only metadata and sources", async () => {

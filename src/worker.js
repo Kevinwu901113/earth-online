@@ -38,7 +38,7 @@ export async function runOne(
     context.standards = (
       await repo.pool.query("SELECT id,version,body FROM public_standards")
     ).rows;
-    if (["route", "chat"].includes(job.kind))
+    if (["route", "chat", "skills"].includes(job.kind))
       context.knowledge = await retrieveKnowledge(
         knowledge,
         planningQuery(job, context),

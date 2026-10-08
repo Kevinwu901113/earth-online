@@ -1,3 +1,4 @@
+import { skillFixture } from "../skill-fixture.js";
 // Test-only server: real HTTP, Postgres, Redis and worker; deterministic model fixture.
 // This entrypoint is never copied into the production image.
 import { setTimeout as delay } from "node:timers/promises";
@@ -29,6 +30,7 @@ const cfg = config({
 const limitedSubmissions = new Set();
 const agent = {
   run: async (job, context) => {
+    if (job.kind === "skills") return skillFixture(job, context);
     if (job.kind === "route" && context.goals[0]?.title === "删除规划中的任务")
       await delay(800);
     if (job.kind === "route" && context.goals[0]?.title === "校验失败后重试") {

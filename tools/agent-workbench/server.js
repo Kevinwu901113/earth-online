@@ -242,6 +242,12 @@ const server = createServer(async (req, res) => {
     const files = {
       "/": "public/index.html",
       "/v2-ui.js": "public/v2-ui.js",
+      "/personal-tree-ui.js": "public/personal-tree-ui.js",
+      "/tree-icons.js": "public/tree-icons.js",
+      "/skill-icons.js": "public/skill-icons.js",
+      "/icon-library.html": "public/icon-library.html",
+      "/icon-library.js": "public/icon-library.js",
+      "/icon-library.css": "public/icon-library.css",
       "/app.js": "public/app.js",
       "/style.css": "public/style.css",
     };

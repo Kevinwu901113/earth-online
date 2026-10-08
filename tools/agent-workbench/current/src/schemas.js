@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { generationSchema } from "../../contract.js";
-import { responseSchema } from "../../workbench-contract.js";
+import { responseSchemaV3 } from "../../workbench-contract.js";
 const text = (n = 1000) => z.string().trim().min(1).max(n);
 export const uuid = z.uuid();
 const time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
@@ -210,7 +210,7 @@ export const chatSchema = z
 export const reviewSchema = z.object({ summary: text(6000) }).strict();
 // The model instructions and the runtime validator consume the same contracts.
 export const outputSchemas = Object.freeze({
-  workbench: responseSchema,
+  workbench: responseSchemaV3,
   skills: generationSchema,
   route: routeSchema,
   assessment: assessmentSchema,

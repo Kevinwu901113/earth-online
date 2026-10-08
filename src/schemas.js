@@ -1,3 +1,4 @@
+import { skillGenerationSchema } from "./skill-tree/generation.js";
 import { z } from "zod";
 const text = (n = 1000) => z.string().trim().min(1).max(n);
 export const uuid = z.uuid();
@@ -65,6 +66,7 @@ export const assessmentSchema = z
   })
   .strict();
 export const commandSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("skills.generate"), id: uuid }).strict(),
   z.object({
     type: z.literal("profile.update"),
     name: text(30),
@@ -208,6 +210,7 @@ export const chatSchema = z
 export const reviewSchema = z.object({ summary: text(6000) }).strict();
 // The model instructions and the runtime validator consume the same contracts.
 export const outputSchemas = Object.freeze({
+  skills: skillGenerationSchema,
   route: routeSchema,
   assessment: assessmentSchema,
   chat: chatSchema,

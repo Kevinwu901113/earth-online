@@ -1,3 +1,4 @@
+import { skillFixture } from "../skill-fixture.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -269,6 +270,13 @@ test(
         id: created.goalId,
         draftId: retry.jobId,
       });
+      await runOne(repo, {
+        run: async (job, context) => skillFixture(job, context),
+      });
+      const skilled = await repo.state(a.id);
+      assert.equal(skilled.state.personalTree.revision, 1);
+      assert.equal(skilled.state.skillPlans[created.goalId].tasks.length, 1);
+      assert.equal((await repo.state(b.id)).state.personalTree.revision, 0);
       const adjusting = await command({
         type: "goal.adjust",
         id: created.goalId,

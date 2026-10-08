@@ -1,3 +1,5 @@
+import {ContractError} from '../../src/skill-tree/contract.js';
+export {ContractError};
 import { z } from 'zod';
 const text = (max=1000)=>z.string().trim().min(1).max(max);
 const id = z.string().regex(/^[a-z][a-z0-9_-]{0,39}$/);
@@ -32,9 +34,6 @@ skills写具体可检验的criterion，前置技能使用prerequisites引用ID�
 每项任务的actions总分钟数必须等于该任务minutes，所有任务minutes总和不超过用户goal.minutes。每项任务至少2个明确可执行的行动。任务criterion对应技能criterion，challenge描述独立可提交成果。
 evidenceMode=text时全部技能和任务的evidenceType必须是text，不能安排必须依赖听觉、视觉、口语表现或真实线下效果才能评估的任务。若用户目标超出文字可验证范围，assumptions明确指出限制，保留原始目标，不宣称能验证现实能力。external表示需要用户另行提交外部证据/人工核验。
 不得输出XP、等级、已掌握状态、认证ID或可执行命令。标准和来源未提供时，明确为个人练习标准，不编造公共认证或资源链接。说明必要假设。任务完成不自动等于技能掌握。`;
-export class ContractError extends Error {
-  constructor(code,issues=[]){super(code);this.code=code;this.issues=issues;}
-}
 export function parseGeneration(raw,input){
   let value;
   try {value=typeof raw==='string'?JSON.parse(raw):raw;}catch {throw new ContractError('invalid_json');}

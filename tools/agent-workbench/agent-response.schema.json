@@ -4,7 +4,7 @@
   "properties": {
     "schemaVersion": {
       "type": "string",
-      "const": "earth.agent.v2"
+      "const": "earth.agent.v3"
     },
     "status": {
       "type": "string",
@@ -108,7 +108,7 @@
           "properties": {
             "schemaVersion": {
               "type": "string",
-              "const": "earth.plan.v2"
+              "const": "earth.plan.v3"
             },
             "goal": {
               "type": "object",
@@ -148,163 +148,6 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 600
-              }
-            },
-            "coreSkillId": {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_-]{0,39}$"
-            },
-            "skills": {
-              "minItems": 3,
-              "maxItems": 24,
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "type": "string",
-                    "pattern": "^[a-z][a-z0-9_-]{0,39}$"
-                  },
-                  "name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 100
-                  },
-                  "description": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 800
-                  },
-                  "icon": {
-                    "type": "string",
-                    "enum": [
-                      "core",
-                      "vocabulary",
-                      "listening",
-                      "reading",
-                      "writing",
-                      "speaking",
-                      "grammar",
-                      "milestone",
-                      "practice",
-                      "knowledge"
-                    ]
-                  },
-                  "kind": {
-                    "type": "string",
-                    "enum": [
-                      "core",
-                      "domain",
-                      "ability",
-                      "milestone"
-                    ]
-                  },
-                  "parentId": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "pattern": "^[a-z][a-z0-9_-]{0,39}$"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "prerequisites": {
-                    "maxItems": 8,
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "pattern": "^[a-z][a-z0-9_-]{0,39}$"
-                    }
-                  },
-                  "baseline": {
-                    "default": {
-                      "status": "unlit",
-                      "basis": "unknown",
-                      "quote": null
-                    },
-                    "type": "object",
-                    "properties": {
-                      "status": {
-                        "type": "string",
-                        "enum": [
-                          "lit",
-                          "unlit"
-                        ]
-                      },
-                      "basis": {
-                        "type": "string",
-                        "enum": [
-                          "self_report",
-                          "unknown"
-                        ]
-                      },
-                      "quote": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "maxLength": 600
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      }
-                    },
-                    "required": [
-                      "status",
-                      "basis",
-                      "quote"
-                    ],
-                    "additionalProperties": false
-                  },
-                  "stat": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 4
-                  },
-                  "milestone": {
-                    "anyOf": [
-                      {
-                        "type": "object",
-                        "properties": {
-                          "framework": {
-                            "type": "string",
-                            "minLength": 1,
-                            "maxLength": 80
-                          },
-                          "label": {
-                            "type": "string",
-                            "minLength": 1,
-                            "maxLength": 80
-                          }
-                        },
-                        "required": [
-                          "framework",
-                          "label"
-                        ],
-                        "additionalProperties": false
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  }
-                },
-                "required": [
-                  "id",
-                  "name",
-                  "description",
-                  "icon",
-                  "kind",
-                  "parentId",
-                  "prerequisites",
-                  "baseline",
-                  "stat",
-                  "milestone"
-                ],
-                "additionalProperties": false
               }
             },
             "targetSkillIds": {
@@ -557,12 +400,284 @@
             "goal",
             "summary",
             "assumptions",
-            "coreSkillId",
-            "skills",
             "targetSkillIds",
             "strategy",
             "resources",
             "tasks"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "treePatch": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "schemaVersion": {
+              "type": "string",
+              "const": "earth.tree.patch.v1"
+            },
+            "baseRevision": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "requestId": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "goalId": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+            },
+            "addNodes": {
+              "maxItems": 8,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 800
+                  },
+                  "icon": {
+                    "type": "string",
+                    "enum": [
+                      "body",
+                      "mind",
+                      "action",
+                      "sport",
+                      "emotion",
+                      "focus",
+                      "language",
+                      "logic",
+                      "information",
+                      "social",
+                      "home",
+                      "money",
+                      "work",
+                      "art",
+                      "strength",
+                      "stamina",
+                      "mobility",
+                      "vocabulary",
+                      "listening",
+                      "reading",
+                      "writing",
+                      "speaking",
+                      "grammar",
+                      "practice",
+                      "knowledge",
+                      "swimming",
+                      "running",
+                      "cycling",
+                      "hiking",
+                      "climbing",
+                      "yoga",
+                      "balance",
+                      "recovery",
+                      "sleep",
+                      "meditation",
+                      "nutrition",
+                      "firstaid",
+                      "cooking",
+                      "baking",
+                      "coffee",
+                      "cleaning",
+                      "organizing",
+                      "repair",
+                      "gardening",
+                      "driving",
+                      "navigation",
+                      "sewing",
+                      "budgeting",
+                      "saving",
+                      "investing",
+                      "research",
+                      "mathematics",
+                      "science",
+                      "history",
+                      "geography",
+                      "memory",
+                      "criticalthinking",
+                      "planning",
+                      "timemanagement",
+                      "translation",
+                      "coding",
+                      "data",
+                      "spreadsheet",
+                      "database",
+                      "security",
+                      "engineering",
+                      "design",
+                      "project",
+                      "leadership",
+                      "teamwork",
+                      "negotiation",
+                      "presentation",
+                      "teaching",
+                      "marketing",
+                      "entrepreneurship",
+                      "photography",
+                      "video",
+                      "drawing",
+                      "music",
+                      "singing",
+                      "guitar",
+                      "piano",
+                      "theater",
+                      "storytelling",
+                      "craftsmanship"
+                    ]
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "domain",
+                      "ability"
+                    ]
+                  },
+                  "parentId": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+                  },
+                  "prerequisites": {
+                    "maxItems": 8,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+                    }
+                  },
+                  "baseline": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "const": "unlit"
+                          },
+                          "basis": {
+                            "type": "string",
+                            "const": "unknown"
+                          },
+                          "quote": {
+                            "type": "null"
+                          }
+                        },
+                        "required": [
+                          "status",
+                          "basis",
+                          "quote"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "const": "lit"
+                          },
+                          "basis": {
+                            "type": "string",
+                            "const": "self_report"
+                          },
+                          "quote": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 600
+                          }
+                        },
+                        "required": [
+                          "status",
+                          "basis",
+                          "quote"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "stat": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 4
+                  },
+                  "milestone": {
+                    "type": "null"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "description",
+                  "icon",
+                  "kind",
+                  "parentId",
+                  "prerequisites",
+                  "baseline",
+                  "stat",
+                  "milestone"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "reuseNodeIds": {
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+              }
+            },
+            "updateNodes": {
+              "maxItems": 20,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 800
+                  }
+                },
+                "required": [
+                  "id",
+                  "description"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "schemaVersion",
+            "baseRevision",
+            "requestId",
+            "goalId",
+            "addNodes",
+            "reuseNodeIds",
+            "updateNodes"
           ],
           "additionalProperties": false
         },
@@ -578,7 +693,8 @@
     "reply",
     "questions",
     "understanding",
-    "plan"
+    "plan",
+    "treePatch"
   ],
   "additionalProperties": false
 }

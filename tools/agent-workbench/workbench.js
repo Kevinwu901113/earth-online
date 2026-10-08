@@ -12,6 +12,7 @@ import {
 } from "./intake.js";
 import { resourceCatalog } from "./resources.js";
 import { checkResources } from "./plan-v2.js";
+import { initialTree, applyTreePatch } from "./tree-patch.js";
 import { agentConfig } from "./engine.js";
 import { DshAgent } from "./current/src/agent.js";
 import {
@@ -119,6 +120,7 @@ export async function prepareMessage(input) {
         messages: [],
         revision: 0,
         plan: null,
+        tree: initialTree(),
       };
   if (c.messages.length >= 120)
     throw Object.assign(new Error(), { code: "conversation_full" });
@@ -164,12 +166,17 @@ export async function runMessage(
     input: { message: lastUser?.content ?? c.messages.at(-1).content },
   };
   const context = compactContext(c);
+  // Legacy snapshots remain untouched; a personal tree starts only on v3 output.
+  const baseTree = c.tree ?? initialTree();
+  context.personalTree = {revision:baseTree.revision,nodes:baseTree.nodes,goals:baseTree.goals};
+  context.treeRequestId = runId;
   context.resourceCatalog = resourceCatalog;
   context.searchAvailable =
     !!baseCfg.EXA_API_KEY && c.capabilities.plugins.includes("earth-tools");
-  context.explicitBatchBudget = explicitBudget(c.messages);
+  context.explicitBatchBudget = explicitBudget(c.messages.slice(context.intake.startIndex));
   const start = Date.now();
   let output;
+  let merged;
   const attempts = [];
   async function progress(status, attempt, error) {
     c.lastRun = {
@@ -185,7 +192,7 @@ export async function runMessage(
     await onProgress(c.lastRun);
   }
   await progress("running", 1);
-  const query = [context.userStatements?.[0], job.input.message]
+  const query = [c.messages[context.intake.startIndex]?.content, job.input.message]
     .filter(Boolean)
     .join("\n");
   context.knowledge = await retrieveLabKnowledge(
@@ -220,6 +227,12 @@ export async function runMessage(
       ]);
       enforceIntake(output, context.intake);
       verifyBaselines(output, c);
+      if (output.schemaVersion === 'earth.agent.v3' && output.plan) {
+        merged = applyTreePatch(baseTree, output.treePatch, output.plan, {
+          requestId: runId,
+          userStatements: c.messages.filter(m=>m.role==='user'&&!isRetry(m.content)).map(m=>m.content),
+        });
+      }
       attempts.push({
         attempt,
         status: "completed",
@@ -243,21 +256,26 @@ export async function runMessage(
         instruction:
           "自动恢复：使用原始用户输入重新输出合法响应。缩短非必要解释，严格遵守收集轮次和输出契约。",
         ...error,
+        ...(output?.plan ? { taskDurations: output.plan.tasks.map(t => ({id:t.id, minutes:t.minutes, actionMinutes:t.actions.map(a=>a.minutes), actionTotal:t.actions.reduce((sum,a)=>sum+a.minutes,0)})) } : {}),
+        repairHint: "duration_mismatch 表示该任务的 minutes 必须等于所有 actions.minutes 的算术总和；同时所有任务合计不能超过 goal.minutes。重新分配步骤时间后再计算总和，不要重复错误数字。",
       };
     }
   }
   if (output.plan) {
-    c.plan = output.plan;
+    c.plan = merged?.plan ?? output.plan;
+    if (merged) c.tree = merged.tree;
     c.revision++;
   }
   c.intake = {
     ...context.intake,
+    processedThrough: c.messages.findLastIndex(m=>m.role==='user'&&!isRetry(m.content)),
     finalized:
       context.intake.mustPlan ||
       (output.status === "draft" && output.questions.length === 0),
   };
   const result = {
     ...output,
+    ...(merged ? {plan:merged.plan,agentPlan:output.plan,treePatch:output.treePatch,treeRevision:merged.tree.revision,tree:merged.tree.nodes,goals:merged.tree.goals} : {}),
     retrieval: retrievalSummary(context.knowledge),
     intake: c.intake,
     revision: c.revision,

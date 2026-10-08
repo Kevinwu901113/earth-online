@@ -1,0 +1,130 @@
+.personal-tree {
+  width: 100%;
+}
+.tree-viewport {
+  position: relative;
+  height: 420px;
+  overflow: hidden;
+  touch-action: none;
+  background: radial-gradient(ellipse, #e9efe4, transparent 70%);
+  border: 1px solid #dce3d7;
+  border-radius: 16px;
+}
+.tree-lines {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  pointer-events: none;
+}
+.tree-lines line {
+  stroke: #bacab5;
+  stroke-width: 1.2;
+}
+.personal-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #fffef9;
+  border: 1px solid #cbd8c6;
+  color: #4c6850;
+  padding: 0;
+}
+.personal-node.domain {
+  border-radius: 13px;
+}
+.personal-node.core {
+  width: 56px;
+  height: 56px;
+  background: #2b4835;
+  color: #f8faef;
+}
+.personal-node.lit {
+  background: #d8edce;
+}
+.personal-node[aria-pressed="true"] {
+  outline: 2px solid #769d67;
+  outline-offset: 3px;
+}
+.personal-node svg {
+  width: 19px !important;
+  height: 19px !important;
+}
+.tree-controls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  padding: 10px;
+}
+.tree-controls button {
+  padding: 8px;
+  font-size: 12px;
+}
+.personal-tree .node-detail {
+  min-height: 100px;
+}
+
+#earth-journey .personal-node {
+  min-width: 0;
+  min-height: 0;
+  box-shadow: none;
+}
+#earth-journey .tree-viewport {
+  color: #4c6850;
+  background: #f4f7f0;
+}
+#earth-journey .personal-node {
+  background: #fffef9;
+  color: #4c6850;
+  border: 1px solid #cbd8c6;
+}
+#earth-journey .personal-node.core {
+  background: #2b4835;
+  color: #fff;
+}
+#earth-journey .personal-node.lit {
+  background: #d8edce;
+}
+#earth-journey .node-detail {
+  padding: 16px;
+  border: 1px solid currentColor;
+  border-radius: 12px;
+  margin: 12px 0;
+}
+#earth-journey .skill-goal {
+  margin: 20px 0;
+  padding: 16px;
+  border: 1px solid #8a987566;
+  border-radius: 14px;
+}
+#earth-journey .skill-goal details {
+  padding: 12px 0;
+}
+#earth-journey .skill-goal summary {
+  cursor: pointer;
+}
+#earth-journey nav {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+#earth-journey nav button {
+  min-width: 0;
+  font-size: 11px;
+}
+#earth-journey .tree-controls button {
+  font-size: 12px;
+  padding: 8px 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  #earth-journey .personal-tree * {
+    transition: none !important;
+  }
+}
+#earth-journey .personal-node,
+#earth-journey .personal-node:active {
+  transform: translate(-50%, -50%);
+}

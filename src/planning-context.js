@@ -11,7 +11,7 @@ const unavailable = (reason) => ({
 });
 
 export function planningQuery(job, context) {
-  if (job.kind === "route") {
+  if (["route", "skills"].includes(job.kind)) {
     const goal = context.goals?.find(
       (g) => g.id === job.input.goalId && !g.deletedAt,
     );
