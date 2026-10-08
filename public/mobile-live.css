@@ -1,0 +1,305 @@
+html {
+  color-scheme: light dark;
+}
+body {
+  margin: 0;
+  background: light-dark(#e7e8e0, #151815);
+}
+button,
+a {
+  cursor: pointer;
+}
+.viz-dotted-background {
+  background-image: radial-gradient(
+    light-dark(#9da18b55, #636b5955) 0.7px,
+    transparent 0.7px
+  );
+  background-size: 18px 18px;
+}
+#earth-goal-preview .eg-phone {
+  min-height: 850px;
+  --ink: var(--eg-ink);
+  --sub: var(--eg-sub);
+  --line: var(--eg-line);
+  --paper: var(--eg-paper);
+  --pop: var(--eg-pop);
+}
+#earth-goal-preview .eg-nav {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  min-height: 80px;
+}
+#earth-goal-preview .eg-nav button[aria-current="page"]:after {
+  bottom: 7px;
+}
+#earth-goal-preview .eg-overlay {
+  position: fixed;
+  padding: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  align-items: safe center;
+}
+#earth-goal-preview .eg-dialog {
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+}
+#earth-goal-preview .eg-main {
+  min-width: 0;
+}
+#earth-goal-preview .eg-main h1 {
+  overflow-wrap: anywhere;
+}
+#earth-goal-preview .eg-error {
+  color: light-dark(#87392c, #ffb3a6);
+  font-size: 13px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+#earth-goal-preview .eg-error:empty {
+  display: none;
+}
+#earth-goal-preview label {
+  display: block;
+  font-size: 13px;
+  margin: 16px 0 7px;
+}
+#earth-goal-preview input,
+#earth-goal-preview select {
+  font: inherit;
+  font-size: 16px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--eg-line);
+  border-radius: 12px;
+  background: var(--eg-panel);
+  color: var(--eg-ink);
+  min-height: 44px;
+}
+#earth-goal-preview .eg-auth {
+  padding-top: 35px;
+}
+#earth-goal-preview .eg-auth h1 {
+  margin: 24px 0;
+}
+#earth-goal-preview .eg-full-link {
+  display: block;
+  color: var(--eg-ink);
+  text-decoration: none;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--eg-line);
+  font-size: 13px;
+}
+#earth-goal-preview .eg-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+#earth-goal-preview .eg-inline svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+#earth-goal-preview .eg-taskrow .eg-toggle {
+  width: 36px;
+  height: 36px;
+}
+#earth-goal-preview .eg-taskopen {
+  min-height: 44px;
+}
+#earth-goal-preview .eg-taskopen small {
+  font-size: 11px;
+}
+#earth-goal-preview .eg-taskopen > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+#earth-goal-preview .eg-empty {
+  padding: 35px 10px;
+}
+#earth-goal-preview .eg-empty > svg {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 10px;
+}
+#earth-goal-preview .eg-status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+  color: var(--eg-sub);
+  padding: 16px 0;
+}
+#earth-goal-preview .eg-status svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+#earth-goal-preview .eg-summary td {
+  overflow-wrap: anywhere;
+}
+#earth-goal-preview .eg-summary th {
+  white-space: nowrap;
+}
+#earth-goal-preview .eg-option {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 8px;
+}
+#earth-goal-preview .eg-question {
+  margin: 18px 0;
+}
+#earth-goal-preview .eg-question h3 {
+  margin-bottom: 12px;
+}
+#earth-goal-preview .eg-question textarea {
+  margin-top: 10px;
+}
+#earth-goal-preview .eg-dialog-top {
+  position: sticky;
+  top: -22px;
+  background: var(--eg-paper);
+  z-index: 2;
+  padding: 5px 0;
+}
+#earth-goal-preview .eg-dialog [data-dismiss] {
+  margin-left: auto;
+}
+#earth-goal-preview .eg-chip {
+  gap: 5px;
+  align-items: center;
+}
+#earth-goal-preview .eg-chip svg {
+  width: 14px;
+  height: 14px;
+}
+#earth-goal-preview .eg-toast {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: min(340px, calc(100% - 40px));
+  z-index: 30;
+}
+#earth-goal-preview .tree-viewport {
+  height: 355px;
+  border: 0;
+  background: radial-gradient(ellipse, var(--eg-soft), transparent 70%);
+  margin-top: 12px;
+}
+#earth-goal-preview .personal-node {
+  background: var(--eg-panel);
+  color: var(--eg-ink);
+  border-color: var(--eg-line);
+}
+#earth-goal-preview .personal-node.lit {
+  background: var(--eg-soft);
+}
+#earth-goal-preview .personal-node.core {
+  background: var(--eg-dark);
+  color: var(--eg-dark-text);
+}
+#earth-goal-preview .tree-lines line {
+  stroke: var(--eg-line);
+}
+#earth-goal-preview .node-detail {
+  background: transparent;
+  color: var(--eg-ink);
+  border-top: 1px solid var(--eg-line);
+  margin-top: 12px;
+}
+#earth-goal-preview .node-detail p,
+#earth-goal-preview .node-detail small {
+  color: var(--eg-sub);
+}
+#earth-goal-preview .tree-controls button {
+  color: var(--eg-ink);
+  background: var(--eg-soft);
+  border: 0;
+  border-radius: 9px;
+}
+#earth-goal-preview .eg-resource a {
+  color: var(--eg-ink);
+  overflow-wrap: anywhere;
+}
+#earth-goal-preview .eg-nav button svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.65;
+}
+#earth-goal-preview .eg-nav button[aria-current="page"] svg {
+  stroke-width: 2.25;
+}
+#earth-goal-preview .eg-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 15px 0;
+}
+#earth-goal-preview .eg-actions button {
+  padding: 9px 12px;
+  border: 1px solid var(--eg-line);
+  border-radius: 10px;
+  font-size: 12px;
+  min-height: 44px;
+}
+#earth-goal-preview .eg-log > svg {
+  width: 20px;
+  height: 20px;
+}
+#earth-goal-preview .eg-muted {
+  overflow-wrap: anywhere;
+}
+#earth-goal-preview .eg-task-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+#earth-goal-preview .eg-task-meta svg {
+  width: 14px;
+  height: 14px;
+}
+#earth-goal-preview .eg-statitem .eg-row > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+#earth-goal-preview .eg-statitem svg {
+  width: 16px;
+  height: 16px;
+}
+#earth-goal-preview .eg-segments button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+#earth-goal-preview .eg-main h3 {
+  overflow-wrap: anywhere;
+}
+#earth-goal-preview .eg-gain {
+  font-size: 12px;
+  color: var(--eg-sub);
+}
+@media (max-width: 430px) {
+  #earth-goal-preview {
+    padding: 0;
+  }
+  #earth-goal-preview .eg-phone {
+    width: 100%;
+    min-height: 100svh;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  #earth-goal-preview .eg-main {
+    padding-bottom: 26px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #earth-goal-preview * {
+    scroll-behavior: auto !important;
+  }
+}

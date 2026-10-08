@@ -141,7 +141,7 @@ async function mountTimeline(
       return route.fulfill({ status: 404 });
     }
   });
-  await page.goto("/");
+  await page.goto("/advanced.html");
   await expect(page.locator(".storage-status")).toContainText("已连接账号");
   await page.locator("[data-nav=quests]").click();
   return {

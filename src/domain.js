@@ -338,6 +338,27 @@ export function applyCommand(
       break;
     }
     case "action.record": {
+      if (cmd.skillTaskId) {
+        const task = s.skillPlans?.[cmd.goal]?.tasks.find(
+          (t) => t.id === cmd.skillTaskId,
+        );
+        if (
+          cmd.plan ||
+          !task ||
+          task.name !== cmd.name ||
+          task.stat !== cmd.stat
+        )
+          throw new DomainError("任务已变化，请刷新后重新选择");
+        if (
+          s.records.some(
+            (r) =>
+              r.goal === cmd.goal &&
+              r.skillTaskId === cmd.skillTaskId &&
+              r.day === cmd.day,
+          )
+        )
+          throw new DomainError("今天已经记录过这项任务");
+      }
       const p = cmd.plan ? find(s.plans, cmd.plan) : null;
       const g = cmd.goal ? findGoal(s, cmd.goal) : null;
       if (p) {
@@ -687,6 +708,7 @@ export function settleJob(
       id: randomUUID(),
       role: "assistant",
       content: output.reply,
+      questions: output.questions ?? [],
       guidance: output.guidance,
       proposals: output.proposals ?? [],
       at: now,

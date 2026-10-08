@@ -16,6 +16,7 @@ for (const d of ["src", "dsh", "scripts", "test", "packages/planning-rag"])
   await walk(d);
 for (const p of [
   "public/app.js",
+  "public/mobile.js",
   "public/character.js",
   "public/api-client.js",
 ]) {

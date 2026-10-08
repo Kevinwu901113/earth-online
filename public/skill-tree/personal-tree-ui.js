@@ -97,14 +97,14 @@ export function renderPersonalTree(root, plan, goals = []) {
     zoom = Math.min(
       1,
       (viewport.clientWidth - 64) / Math.max(1, right - left),
-      356 / Math.max(1, bottom - top),
+      ((viewport.clientHeight || 420) - 64) / Math.max(1, bottom - top),
     );
     px = (-(left + right) / 2) * zoom;
     py = (-(top + bottom) / 2) * zoom;
   }
   function draw() {
     const width = viewport.clientWidth || 360,
-      height = 420,
+      height = viewport.clientHeight || 420,
       ns = "http://www.w3.org/2000/svg",
       svg = document.createElementNS(ns, "svg");
     svg.setAttribute("viewBox", `0 0 ${width} ${height}`);

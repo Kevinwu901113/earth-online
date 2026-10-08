@@ -36,7 +36,7 @@ test("personal tree switches branches, retains expansion and supports wheel zoom
     }
   });
   await page.goto("http://skill-tree.test/");
-  await page.locator('[data-nav="skills"]').click();
+  await page.locator('[data-page="growth"]').click();
   await expect(
     page.getByRole("button", { name: "身心", exact: true }),
   ).toBeVisible();

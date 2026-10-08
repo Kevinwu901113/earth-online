@@ -65,7 +65,7 @@ import { renderPersonalTree } from "./skill-tree/personal-tree-ui.js";
   const field = (name, title, value = "", type = "text", extra = "") =>
     `<label>${title}<input name="${name}" type="${type}" value="${esc(value)}" ${extra}></label>`;
   const area = (name, title, value = "", max = 3000) =>
-    `<label>${title}<textarea name="${name}" maxlength="${max}" required>${esc(value)}</textarea></label>`;
+    `<label>${title}<textarea aria-label="${esc(title)}" name="${name}" maxlength="${max}" required>${esc(value)}</textarea></label>`;
   const heading = (a, b) =>
     `<div class="eyebrow">EARTH / ${a}</div><h3>${b}</h3>`;
   const prose = (s) => `<div class="prose">${esc(s)}</div>`;
@@ -848,7 +848,15 @@ import { renderPersonalTree } from "./skill-tree/personal-tree-ui.js";
               const guidance = m.guidance;
               const proposals = m.proposals ?? [];
               const structured = guidance || proposals.length;
-              const reply = String(m.content ?? "");
+              const reply = [
+                String(m.content ?? ""),
+                ...(m.questions ?? []).map(
+                  (q) =>
+                    `${q.question}\n${q.options.join(" / ")}\n也可以直接补充。`,
+                ),
+              ]
+                .filter(Boolean)
+                .join("\n\n");
               return `<article class="chat-message chat-assistant" data-message-id="${esc(m.id)}"><div class="chat-speaker"><span>✦</span><small>管家的建议</small></div>${guidance ? guidanceView(guidance) : `<div class="chat-answer"><p>${esc(shortChatText(reply))}</p></div>`}${structured ? `<details class="chat-explanation" data-chat-details="reply"><summary>查看管家的说明</summary>${prose(reply)}</details>` : reply.length > 160 ? `<details class="chat-explanation" data-chat-details="reply"><summary>展开完整回复</summary>${prose(reply)}</details>` : ""}${proposals.length ? `<div class="chat-proposals"><div class="chat-section-label">可以这样开始 <span>确认后才会保存</span></div>${proposals.map((p, i) => proposalCard(p, m.id + ":" + i, m.at)).join("")}</div>` : guidance ? '<p class="chat-suggestion-note">以上是行动建议。继续告诉管家你的目标与可用时间，可以生成任务或日程提案。</p>' : ""}</article>`;
             })
             .join("")

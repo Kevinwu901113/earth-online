@@ -7,7 +7,7 @@ test("route failure and retry stay visible on the goal and its open detail view"
 }) => {
   const email = randomUUID() + "@route.test.invalid";
   try {
-    await page.goto("/");
+    await page.goto("/advanced.html");
     await page.getByRole("button", { name: "还没有账号？注册" }).click();
     await page.getByLabel("邮箱", { exact: true }).fill(email);
     await page.getByLabel("密码（至少 12 位）").fill("route-test-password");

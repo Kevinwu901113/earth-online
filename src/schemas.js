@@ -130,6 +130,7 @@ export const commandSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal("action.record"),
+    skillTaskId: text(40).optional(),
     plan: uuid.nullable(),
     goal: uuid.nullable(),
     name: text(200),
@@ -200,6 +201,17 @@ export const guidanceSchema = z
 export const chatSchema = z
   .object({
     reply: text(10000),
+    questions: z
+      .array(
+        z
+          .object({
+            question: text(240),
+            options: z.array(text(120)).min(2).max(3),
+          })
+          .strict(),
+      )
+      .max(2)
+      .optional(),
     guidance: guidanceSchema.nullable().default(null),
     proposals: z
       .array(z.object({ label: text(100), command: commandSchema }).strict())

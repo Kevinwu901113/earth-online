@@ -5,6 +5,7 @@ export default defineConfig({
   workers: 1,
   timeout: 60000,
   use: {
+    channel: process.platform === "win32" ? "msedge" : undefined,
     baseURL: "http://127.0.0.1:3101",
     viewport: { width: 390, height: 844 },
     trace: "retain-on-failure",
