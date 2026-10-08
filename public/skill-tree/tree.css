@@ -55,6 +55,25 @@
   width: 19px !important;
   height: 19px !important;
 }
+.personal-node-label {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 0 3px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 400;
+  color: var(--eg-sub, var(--sub, #697267));
+  background: var(--eg-paper, var(--paper, #f4f7f0));
+  pointer-events: none;
+}
+.personal-node[aria-pressed="true"] .personal-node-label {
+  color: var(--eg-ink, var(--ink, #25352c));
+  font-weight: 600;
+}
 .tree-controls {
   display: flex;
   gap: 8px;

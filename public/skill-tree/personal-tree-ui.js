@@ -1,4 +1,5 @@
 import { skillIcons as icons } from "./skill-icons.js";
+import { nodeLabel } from "./node-label.js";
 export function renderPersonalTree(root, plan, goals = []) {
   const wrap = document.createElement("section");
   wrap.className = "personal-tree";
@@ -97,10 +98,10 @@ export function renderPersonalTree(root, plan, goals = []) {
     zoom = Math.min(
       1,
       (viewport.clientWidth - 64) / Math.max(1, right - left),
-      ((viewport.clientHeight || 420) - 64) / Math.max(1, bottom - top),
+      ((viewport.clientHeight || 420) - 110) / Math.max(1, bottom - top),
     );
     px = (-(left + right) / 2) * zoom;
-    py = (-(top + bottom) / 2) * zoom;
+    py = (-(top + bottom) / 2) * zoom - 12;
   }
   function draw() {
     const width = viewport.clientWidth || 360,
@@ -125,15 +126,20 @@ export function renderPersonalTree(root, plan, goals = []) {
     ]) {
       const p = positions.get(id) || [0, 0],
         base = [width / 2 + p[0] * zoom + px, height / 2 + p[1] * zoom + py],
-        size = sizeOf(id);
+        size = sizeOf(id),
+        node = nodes.get(id),
+        labelWidth =
+          Array.from(nodeLabel(node, nodes.get(node.parentId))).length * 12 + 8,
+        halfWidth = Math.max(size, labelWidth) / 2;
       const clear = ([x, y]) =>
         placed.every(
           (n) =>
-            Math.abs(x - n.x) >= (size + n.size) / 2 + 10 ||
-            Math.abs(y - n.y) >= (size + n.size) / 2 + 10,
+            Math.abs(x - n.x) >= halfWidth + n.halfWidth + 10 ||
+            y - size / 2 >= n.y + n.size / 2 + 35 ||
+            n.y - n.size / 2 >= y + size / 2 + 35,
         );
       let candidate = base;
-      if (!entrances.includes(id) && !clear(candidate)) {
+      if (!clear(candidate)) {
         const tangent = Math.atan2(p[1], p[0]) + Math.PI / 2;
         search: for (let radius = 8; ; radius += 8)
           for (let step = 0; step < 24; step++) {
@@ -149,7 +155,7 @@ export function renderPersonalTree(root, plan, goals = []) {
           }
       }
       screen.set(id, candidate);
-      placed.push({ x: candidate[0], y: candidate[1], size });
+      placed.push({ x: candidate[0], y: candidate[1], size, halfWidth });
     }
     const point = (id) => screen.get(id);
     for (const id of visible) {
@@ -182,6 +188,11 @@ export function renderPersonalTree(root, plan, goals = []) {
       icon.dataset.lucide = icons[n.icon] || "circle";
       icon.setAttribute("aria-hidden", "true");
       button.append(icon);
+      const caption = document.createElement("span");
+      caption.className = "personal-node-label";
+      caption.textContent = nodeLabel(n, nodes.get(n.parentId));
+      caption.setAttribute("aria-hidden", "true");
+      button.append(caption);
       button.onclick = () => {
         selected = id;
         if (branches.includes(id) && activeBranch !== id) {
