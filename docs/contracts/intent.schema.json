@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "planning",
+        "schedule_change",
+        "goal_change",
+        "reflection",
+        "question",
+        "context",
+        "greeting",
+        "clarification",
+        "retry"
+      ]
+    },
+    "confidence": {
+      "type": "string",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ]
+    },
+    "shouldRetrieve": {
+      "type": "boolean"
+    },
+    "requiresClarification": {
+      "type": "boolean"
+    },
+    "targetGoalId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "targetPlanId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "timeBudget": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "explicitPlanning": {
+      "type": "boolean"
+    },
+    "requestedActions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "plan",
+          "reschedule",
+          "delete_goal",
+          "delete_plan",
+          "manage_goal",
+          "review"
+        ]
+      }
+    },
+    "blockedActions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "plan",
+          "delete_goal",
+          "delete_plan"
+        ]
+      }
+    },
+    "reasonCodes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "explicit_request",
+          "followup_context",
+          "ambiguous_reference",
+          "multiple_requests",
+          "negated_request",
+          "quoted_example",
+          "informational",
+          "insufficient_signal"
+        ]
+      }
+    }
+  },
+  "required": [
+    "kind",
+    "confidence",
+    "shouldRetrieve",
+    "requiresClarification",
+    "targetGoalId",
+    "targetPlanId",
+    "timeBudget",
+    "explicitPlanning",
+    "requestedActions",
+    "blockedActions",
+    "reasonCodes"
+  ],
+  "additionalProperties": false
+}

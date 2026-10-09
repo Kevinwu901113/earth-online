@@ -1,3 +1,4 @@
+import {customerPlanningLanguage} from '../../src/planning-language.js';
 import {skillIconCatalog} from './public/skill-icons.js';
 import {treePatchSchema,planSchemaV3,personalNodeSchema} from './tree-patch.js';
 import { z } from 'zod';
@@ -71,7 +72,8 @@ prerequisites可引用全树已有或本次新增节点；parentId只表示归�
 默认语言层级：language→英语→听力/口语/阅读/写作。雅思7分只写plan.goal，不出现在节点中。听说读写不得直接挂language，不拆到定位信息/句子组织等课程细节。健身：physical→力量/耐力/灵活性；游泳：sport→游泳，同时复用耐力；做晚饭：life→烹饪，不按菜名扩树。层数允许不同。
 新目标为英语工作交流时，复用已有英语听力与口语，不生成职场英语或新的同义节点。目标不同不等于技能不同。所有涉及的能力都关联目标。默认prerequisites=[]，归属不是解锁条件。只有用户明确需要长期专精才继续细分。
 context.previousPlan仅是上一批安排；context.personalTree才是已有能力和所有目标的权威索引。新目标可使用有限追问，不能重新询问明确已有的基础。
-`;
+
+${customerPlanningLanguage}`;
 export const workbenchContracts=()=>({
   iconCatalog:skillIconCatalog,request:z.toJSONSchema(messageSchema),response:z.toJSONSchema(responseSchemaV3),treePatch:z.toJSONSchema(treePatchSchema),
   skillNode:z.toJSONSchema(personalNodeSchema),

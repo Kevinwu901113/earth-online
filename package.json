@@ -17,7 +17,8 @@
     "test:e2e": "playwright test",
     "admin": "node --env-file-if-exists=.env scripts/admin.js",
     "deploy": "node scripts/deploy.js",
-    "knowledge": "node --env-file-if-exists=.env packages/planning-rag/cli.js"
+    "knowledge": "node --env-file-if-exists=.env packages/planning-rag/cli.js",
+    "contracts": "node scripts/export-agent-contracts.js"
   },
   "dependencies": {
     "@earth-online/planning-rag": "file:packages/planning-rag",

@@ -450,3 +450,34 @@ test("all output boundaries stay strict, including review, quotes and proposal l
   ])
     assert.throws(() => validateOutput(kind, value), AgentError);
 });
+
+test("malformed and unknown event envelopes cannot produce a valid output or private diagnostics", () => {
+  for (const result of [
+    null,
+    { finalResponse: '{"summary":"ok"}', events: {} },
+    { finalResponse: '{"summary":"ok"}', events: [null] },
+    {
+      finalResponse: '{"summary":"ok"}',
+      events: [
+        {
+          type: "PRIVATE_UNKNOWN_END",
+          data: { reason: { kind: "completed" } },
+        },
+      ],
+    },
+    {
+      finalResponse: '{"summary":"ok"}',
+      events: [
+        { type: "assistant/message", data: { message: { content: [null] } } },
+        { type: "turn/end", data: { reason: { kind: "completed" } } },
+      ],
+    },
+  ])
+    assert.throws(
+      () => outputFromRun("review", result),
+      (error) =>
+        error instanceof AgentError &&
+        error.failure.code === "model_execution_failed" &&
+        !JSON.stringify(error.failure).includes("PRIVATE"),
+    );
+});

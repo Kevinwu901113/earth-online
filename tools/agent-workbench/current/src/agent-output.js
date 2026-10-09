@@ -12,6 +12,8 @@ const messages = Object.freeze({
     "模型返回的内容不是完整 JSON，未生成可用结果；内容已保存，可重试。",
   output_schema_invalid:
     "模型返回的内容格式不符合要求，未生成可用结果；内容已保存，可重试。",
+  intent_mismatch:
+    "规划尚未符合你的本次意图或时间预算，未采用本次结果；内容已保存，可重试。",
   source_unverified:
     "路线引用了未经检索确认的来源，未采用本次结果；可重新规划。",
   job_interrupted: "执行中断，结果未提交；原始内容已保留，请重试。",
@@ -169,7 +171,16 @@ export function parseOutput(raw, details = {}) {
 // SDK resolution means the session became idle, not that the model completed.
 // Check the documented event envelope before admitting any text to settlement.
 export function outputFromRun(kind, result, generation = {}) {
-  const events = result.events ?? [];
+  if (
+    !result ||
+    !Array.isArray(result.events) ||
+    result.events.some((event) => !event || typeof event.type !== "string")
+  )
+    throw new AgentError("model_execution_failed", {
+      phase: "completion",
+      execution: { endReason: "unknown" },
+    });
+  const events = result.events;
   const ends = events.filter((e) => e.type === "turn/end");
   const last = events.findLast((e) => e.type === "assistant/message");
   const unfinished = ends.find((e) => e.data?.reason?.kind !== "completed");
@@ -181,13 +192,23 @@ export function outputFromRun(kind, result, generation = {}) {
     "aborted",
     "blocked",
   ];
+  const content = last?.data?.message?.content;
+  if (
+    content !== undefined &&
+    (!Array.isArray(content) ||
+      content.some((block) => !block || typeof block.type !== "string"))
+  )
+    throw new AgentError("model_execution_failed", {
+      phase: "completion",
+      execution: { endReason: "unknown" },
+    });
   const execution = {
     endReason: knownReasons.includes(reason) ? reason : "unknown",
     outputCharacters:
       typeof result.finalResponse === "string"
         ? result.finalResponse.length
         : 0,
-    reasoningCharacters: (last?.data?.message?.content ?? [])
+    reasoningCharacters: (content ?? [])
       .filter((b) => b.type === "reasoning" && typeof b.text === "string")
       .reduce((sum, b) => sum + b.text.length, 0),
   };

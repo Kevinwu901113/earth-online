@@ -249,8 +249,12 @@ test("dragging and keyboard resize change real duration and physical block heigh
   await page.mouse.up();
   await expect(handle).toHaveAttribute("aria-valuenow", "90");
   await expect(block).toHaveAttribute("data-minutes", "90");
-  const extended = await block.boundingBox();
-  expect(extended.height / initial.height).toBeCloseTo(1.5, 2);
+  await expect
+    .poll(async () => {
+      const extended = await block.boundingBox();
+      return extended ? extended.height / initial.height : 0;
+    })
+    .toBeCloseTo(1.5, 2);
   await handle.focus();
   await handle.press("ArrowUp");
   await expect(handle).toHaveAttribute("aria-valuenow", "95");
@@ -671,16 +675,17 @@ test("visual AI guidance explains actions while scheduling requires proposal con
     content: "把今天的安排变成可执行的小步骤",
   });
   fixture.settle(chat.jobs[0], {
-    reply: "可以先安排两小步。",
+    reply: "可以先安排两小步。外部学习资源检索服务不可用，故资料存在缺口。",
     guidance: {
       title: "把今天拆成两小步",
-      summary: "先完成要点，再写完整段落。",
+      summary: "先完成要点，再写完整段落。知识库检索不等于能力评估。",
       steps: [
         {
           title: "列出三个要点",
           minutes: 5,
           kind: "main",
-          detail: "背景、经历、目标各一句。",
+          detail:
+            "背景、经历、目标各一句。未检索到公开认证标准（标准位留空）。",
         },
         {
           title: "写成完整段落",
@@ -709,6 +714,13 @@ test("visual AI guidance explains actions while scheduling requires proposal con
   await page.locator(".guide-bar").click();
   await expect(page.locator(".chat-guidance .guidance-step")).toHaveCount(2);
   await expect(page.locator(".chat-guidance")).toContainText("列出三个要点");
+  await expect(page.locator(".chat-guidance")).toContainText(
+    "先完成要点，再写完整段落。",
+  );
+  await expect(page.locator(".sheet-content")).not.toContainText(
+    /外部学习资源检索服务|资料存在缺口|标准位留空|知识库检索不等于/,
+  );
+  expect(fixture.state.messages.at(-1).content).toContain("检索服务不可用");
   const draft = page.getByLabel("说说你的目标、时间和目前的情况", {
     exact: true,
   });

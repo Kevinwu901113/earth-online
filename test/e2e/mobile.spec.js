@@ -10,7 +10,11 @@ import {
 import { commandSchema } from "../../src/schemas.js";
 import { skillFixture } from "../skill-fixture.js";
 import { skillGoalId } from "../../src/skill-tree/generation.js";
-test.use({ channel: process.platform === "win32" ? "msedge" : undefined });
+test.use({
+  channel:
+    process.env.PLAYWRIGHT_CHANNEL ??
+    (process.platform === "win32" ? "msedge" : undefined),
+});
 
 test("mobile shell: real command contracts, clarification, route confirmation, skills, recording and reload", async ({
   page,
@@ -60,7 +64,8 @@ test("mobile shell: real command contracts, clarification, route confirmation, s
             };
     if (job.kind === "route")
       out = {
-        summary: "先理解短句，再练习场景交流。",
+        summary:
+          "先理解短句，再练习场景交流。请先准备一篇你能打开的英语短文。未检索到公开认证标准（标准位留空）；外部学习资源检索服务不可用，故资料存在缺口，本路线仅引用知识库规划参考，且知识库检索不等于能力评估。",
         minutes: 20,
         stat: 0,
         stages: [
@@ -163,6 +168,20 @@ test("mobile shell: real command contracts, clarification, route confirmation, s
   await expect(
     page.getByRole("button", { name: "确认路线并加入" }),
   ).toBeVisible({ timeout: 12000 });
+  await expect(page.locator(".eg-summary")).toContainText(
+    "先理解短句，再练习场景交流。",
+  );
+  await expect(page.locator(".eg-summary")).toContainText(
+    "请先准备一篇你能打开的英语短文。",
+  );
+  await expect(page.locator(".eg-overlay")).not.toContainText(
+    /外部学习资源检索服务|资料存在缺口|标准位留空|知识库检索不等于/,
+  );
+  expect(state.goals[0].draft.route.summary).toContain("检索服务不可用");
+  await page.screenshot({
+    path: "test-results/mobile-clean-route.png",
+    fullPage: true,
+  });
   await page.getByRole("button", { name: "关闭目标输入" }).click();
   await page.locator("[data-page=tasks]").click();
   await page.locator("[data-tab=goals]").click();

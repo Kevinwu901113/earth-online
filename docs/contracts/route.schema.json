@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "minutes": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 240
+    },
+    "stat": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4
+    },
+    "stages": {
+      "minItems": 1,
+      "maxItems": 8,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "criterion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "exercise": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "actions": {
+            "default": [],
+            "description": "可直接安排进一天的具体行动块；name 简短明确，minutes 表示时长，每阶段总时长不得超过路线 minutes。",
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "minutes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 240
+                }
+              },
+              "required": [
+                "name",
+                "minutes"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "steps": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "description": "练习步骤，用一段字符串表达；多步之间可用换行分隔。"
+          },
+          "challenge": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1500
+          },
+          "standardId": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "standardVersion": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "criterion",
+          "exercise",
+          "steps",
+          "challenge"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "sources": {
+      "default": [],
+      "maxItems": 15,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "retrievedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "title",
+          "url",
+          "note"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "summary",
+    "minutes",
+    "stat",
+    "stages"
+  ],
+  "additionalProperties": false
+}

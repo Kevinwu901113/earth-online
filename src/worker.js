@@ -5,10 +5,11 @@ import { config as getConfig } from "./config.js";
 import { makePool } from "./db.js";
 import { Repository } from "./repository.js";
 import { DshAgent } from "./agent.js";
-import { failureFor } from "./agent-output.js";
+import { AgentError, failureFor } from "./agent-output.js";
 import { DomainError } from "./domain.js";
 import { createKnowledge } from "@earth-online/planning-rag";
 import { planningQuery, retrieveKnowledge } from "./planning-context.js";
+import { analyzeIntent } from "./intent.js";
 export async function runOne(
   repo,
   agent,
@@ -20,7 +21,15 @@ export async function runOne(
   await repo.expire();
   const job = await repo.claim(timeoutMs);
   if (!job) return false;
+  const deadline = performance.now() + timeoutMs;
   const abort = new AbortController();
+  const remaining = () => {
+    if (abort.signal.aborted)
+      throw new AgentError("job_interrupted", { phase: "execution" });
+    const ms = deadline - performance.now();
+    if (ms <= 0) throw new AgentError("model_timeout", { phase: "execution" });
+    return ms;
+  };
   const onAbort = () => abort.abort();
   signal?.addEventListener("abort", onAbort, { once: true });
   if (signal?.aborted) abort.abort();
@@ -38,20 +47,26 @@ export async function runOne(
     context.standards = (
       await repo.pool.query("SELECT id,version,body FROM public_standards")
     ).rows;
+    context.intent = analyzeIntent(job, context);
     if (["route", "chat", "skills"].includes(job.kind))
       context.knowledge = await retrieveKnowledge(
         knowledge,
         planningQuery(job, context),
         job.user_id,
-        { signal: abort.signal },
+        { signal: abort.signal, timeoutMs: Math.min(20000, remaining()) },
       );
-    const out = await agent.run(job, context, abort.signal);
+    const out = await agent.run(job, context, abort.signal, {
+      timeoutMs: remaining(),
+    });
+    remaining();
     await repo.finish(job, out);
   } catch (e) {
     const failure =
       e instanceof DomainError
         ? { code: "domain_rejected", phase: "settlement", message: e.message }
-        : failureFor(e);
+        : abort.signal.aborted
+          ? new AgentError("job_interrupted", { phase: "execution" }).failure
+          : failureFor(e);
     const failed = await repo.fail(job, failure);
     if (failed)
       console.error(

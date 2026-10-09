@@ -2,6 +2,15 @@ import { mkdir, readFile, open, rename, rm, stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
+import {
+  compareIds,
+  rankLexicalCandidates,
+  candidateWindow,
+  termPattern,
+  isNameTerm,
+  LEXICAL_SCAN_LIMIT,
+  CANDIDATES_PER_DOCUMENT,
+} from "./retrieval.js";
 
 const visible = (doc, userId) => doc.ownerId === null || doc.ownerId === userId;
 const cosine = (a, b) => {
@@ -110,22 +119,42 @@ export class FileStore {
     const docs = (await this.read()).documents.filter((d) =>
       visible(d, userId),
     );
-    return docs
+    return candidateWindow(
+      docs
+        .flatMap((doc) =>
+          doc.chunks
+            .filter((c) => c.modelKey === modelKey)
+            .map((c) => ({
+              ...c,
+              ownerId: doc.ownerId,
+              documentId: doc.id,
+              title: doc.title,
+              url: doc.url,
+              tags: doc.tags,
+              score: cosine(vector, c.vector),
+            })),
+        )
+        .sort((a, b) => b.score - a.score || compareIds(a.id, b.id)),
+      limit,
+    );
+  }
+  async searchLexical(plan, userId, modelKey, limit) {
+    if (!plan.terms.length) return [];
+    const candidates = (await this.read()).documents
+      .filter((doc) => visible(doc, userId))
       .flatMap((doc) =>
         doc.chunks
-          .filter((c) => c.modelKey === modelKey)
-          .map((c) => ({
-            ...c,
+          .filter((chunk) => chunk.modelKey === modelKey)
+          .map((chunk) => ({
+            ...chunk,
             ownerId: doc.ownerId,
             documentId: doc.id,
             title: doc.title,
             url: doc.url,
             tags: doc.tags,
-            score: cosine(vector, c.vector),
           })),
-      )
-      .sort((a, b) => b.score - a.score || a.id.localeCompare(b.id))
-      .slice(0, limit);
+      );
+    return rankLexicalCandidates(candidates, plan, limit);
   }
   async close() {}
 }
@@ -262,15 +291,75 @@ export class PgStore {
       await (
         await this.connection()
       ).query(
-        `SELECT c.document_id AS "documentId",c.ordinal,c.content AS text,d.title,d.url,d.tags,d.owner_id AS "ownerId",
-      1-(c.embedding <=> $3::vector) AS score
-      FROM earth_knowledge_chunks c JOIN earth_knowledge_documents d ON d.namespace=c.namespace AND d.id=c.document_id
-      WHERE c.namespace=$1 AND (d.owner_id IS NULL OR d.owner_id=$2) AND c.model_key=$4
-      ORDER BY c.embedding <=> $3::vector LIMIT $5`,
-        [this.namespace, userId, JSON.stringify(vector), modelKey, limit],
+        `WITH scoped AS MATERIALIZED (
+          SELECT c.document_id AS "documentId",c.ordinal,c.content AS text,c.embedding,d.title,d.url,d.tags,d.owner_id AS "ownerId"
+          FROM earth_knowledge_chunks c JOIN earth_knowledge_documents d ON d.namespace=c.namespace AND d.id=c.document_id
+          WHERE c.namespace=$1 AND (d.owner_id IS NULL OR d.owner_id=$2) AND c.model_key=$4
+        ), ranked AS (
+          SELECT *,row_number() OVER (PARTITION BY "documentId" ORDER BY embedding <=> $3::vector,ordinal::text COLLATE "C") AS document_rank FROM scoped
+        ) SELECT *,1-(embedding <=> $3::vector) AS score FROM ranked WHERE document_rank<=$6
+        ORDER BY embedding <=> $3::vector,("documentId" || ':' || ordinal::text) COLLATE "C" LIMIT $5`,
+        [
+          this.namespace,
+          userId,
+          JSON.stringify(vector),
+          modelKey,
+          limit,
+          CANDIDATES_PER_DOCUMENT,
+        ],
       )
     ).rows;
-    return rows.map((r) => ({ ...r, id: `${r.documentId}:${r.ordinal}` }));
+    return rows.map(({ embedding: _vector, ...r }) => ({
+      ...r,
+      id: `${r.documentId}:${r.ordinal}`,
+    }));
+  }
+  async searchLexical(plan, userId, modelKey, limit) {
+    if (!plan.terms.length) return [];
+    // Native PostgreSQL regexes work for Chinese without a tokenizer extension.
+    // Scoping is materialized first; neither rank nor candidate limits see another owner.
+    const rows = (
+      await (
+        await this.connection()
+      ).query(
+        `
+      WITH scoped AS MATERIALIZED (
+        SELECT c.document_id AS "documentId",c.ordinal,c.content AS text,d.title,d.url,d.tags,d.owner_id AS "ownerId",
+          lower(normalize(d.title,NFKC)) AS title_text,
+          lower(normalize(COALESCE((SELECT string_agg(t.tag,' ') FROM jsonb_array_elements_text(d.tags) AS t(tag)),''),NFKC)) AS tag_text,
+          lower(normalize(c.content,NFKC)) AS body_text
+        FROM earth_knowledge_chunks c JOIN earth_knowledge_documents d ON d.namespace=c.namespace AND d.id=c.document_id
+        WHERE c.namespace=$1 AND (d.owner_id IS NULL OR d.owner_id=$2) AND c.model_key=$3
+      ), weighted AS (
+        SELECT *, (SELECT sum(4 * (title_text ~ pattern)::int + 3 * (tag_text ~ pattern)::int + (body_text ~ pattern)::int)
+          FROM unnest($4::text[]) AS p(pattern)) AS lexical_score FROM scoped
+      ), eligible AS (
+        SELECT * FROM weighted WHERE lexical_score>0 AND (
+          EXISTS(SELECT 1 FROM unnest($8::text[]) AS p(pattern) WHERE title_text ~ pattern OR tag_text ~ pattern)
+          OR EXISTS(SELECT 1 FROM jsonb_array_elements($6::jsonb) AS g(terms) WHERE
+            (SELECT count(*) FROM jsonb_array_elements_text(g.terms) AS p(pattern) WHERE title_text ~ pattern OR tag_text ~ pattern OR body_text ~ pattern)::float / jsonb_array_length(g.terms) >= 0.34)
+        )
+      ), ranked AS (
+        SELECT *,row_number() OVER (PARTITION BY "documentId" ORDER BY lexical_score DESC,ordinal::text COLLATE "C") AS document_rank FROM eligible
+      ) SELECT "documentId",ordinal,text,title,url,tags,"ownerId" FROM ranked WHERE document_rank<=$7
+      ORDER BY lexical_score DESC,("documentId" || ':' || ordinal::text) COLLATE "C" LIMIT $5`,
+        [
+          this.namespace,
+          userId,
+          modelKey,
+          plan.terms.map(termPattern),
+          LEXICAL_SCAN_LIMIT,
+          JSON.stringify(plan.groups.map((group) => group.map(termPattern))),
+          CANDIDATES_PER_DOCUMENT,
+          plan.terms.filter(isNameTerm).map(termPattern),
+        ],
+      )
+    ).rows;
+    return rankLexicalCandidates(
+      rows.map((r) => ({ ...r, id: `${r.documentId}:${r.ordinal}` })),
+      plan,
+      limit,
+    );
   }
   async close() {
     await this.pool?.end();

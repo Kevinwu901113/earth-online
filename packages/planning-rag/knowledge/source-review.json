@@ -1,0 +1,656 @@
+{
+  "schemaVersion": "earth.knowledge.review.v1",
+  "reviewedAt": "2026-10-09",
+  "seedVersion": "2026-10-09",
+  "policy": "仅简短转述原研究或官方方法。执行步骤、预算和情景为原创设计，不是来源案例；未读取内容不入库。审核日期不是网页更新日期，也不是运行时检索日期。",
+  "counts": {
+    "accepted": 28,
+    "rejected": 3,
+    "originalScenarios": 56
+  },
+  "sources": [
+    {
+      "documentId": "goal-criteria-and-near-steps",
+      "title": "把目标变成近期可检查的步骤",
+      "url": "https://med.stanford.edu/content/dam/sm/s-spire/documents/PD.locke-and-latham-retrospective_Paper.pdf",
+      "reviewedAt": "2026-10-09",
+      "publisher": "Locke 与 Latham；Stanford 托管原论文",
+      "type": "research_review",
+      "decision": "accepted",
+      "whyUseful": "把目标变成近期可检查的步骤，能支持具体行动、产物与后续调整。",
+      "limits": "两例中的顺序与分钟是原创预算，不是论文配方；完成条件始终由用户确认。投入、XP和作品数量不能替代质量或真实能力证据；没有反馈时先标注未知。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://med.stanford.edu/content/dam/sm/s-spire/documents/PD.locke-and-latham-retrospective_Paper.pdf",
+        "scope": "paper",
+        "checkedSections": ["Task Complexity", "Feedback", "proximal goals"]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "implementation-if-then-plan",
+      "title": "用情境与具体动作连接行动",
+      "url": "https://www.socmot.uni-konstanz.de/sites/default/files/99_Gollwitzer_Implementation_Intentions.pdf",
+      "reviewedAt": "2026-10-09",
+      "publisher": "Gollwitzer；Konstanz 作者研究组",
+      "type": "research_paper",
+      "decision": "accepted",
+      "whyUseful": "用情境与具体动作连接行动，能支持具体行动、产物与后续调整。",
+      "limits": "原创情景用于示范把提示接到行动，不是受试者效果。提示要可观察，备选要在预算内；没有材料时先取得或澄清，不承诺必定消除拖延。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://www.socmot.uni-konstanz.de/sites/default/files/99_Gollwitzer_Implementation_Intentions.pdf",
+        "scope": "paper",
+        "checkedSections": ["goal intentions", "implementation intentions"]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "learning-retrieval-and-spacing",
+      "title": "把学习分成回忆、检查与间隔复习",
+      "url": "https://www.psychologicalscience.org/journals/pspi/1529100612453266/",
+      "reviewedAt": "2026-10-09",
+      "publisher": "Association for Psychological Science；Dunlosky 等",
+      "type": "research_review",
+      "decision": "accepted",
+      "whyUseful": "把学习分成回忆、检查与间隔复习，能支持具体行动、产物与后续调整。",
+      "limits": "两例的块长、间隔和产物由项目原创，仅供调整。检索练习需要真实答案或可核验结果；重要考试材料不足时先确认，分钟和正确次数不是能力认证。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://www.psychologicalscience.org/journals/pspi/1529100612453266/",
+        "scope": "published_summary",
+        "checkedSections": [
+          "Overall assessment",
+          "practice testing",
+          "distributed practice"
+        ]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "progress-record-and-adjust",
+      "title": "根据实际进度调整下一步",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/26479070/",
+      "reviewedAt": "2026-10-09",
+      "publisher": "Harkin 等；NCBI 收录原论文摘要",
+      "type": "research_meta_analysis",
+      "decision": "accepted",
+      "whyUseful": "根据实际进度调整下一步，能支持具体行动、产物与后续调整。",
+      "limits": "只核查论文摘要，没有宣称阅读全文；具体复盘格式与情景均原创。记录不能替用户更换完成标准；没有实际证据时先询问，不把指标做漂亮当目标完成。",
+      "verification": {
+        "method": "official_api_read",
+        "readUrl": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=26479070&retmode=xml",
+        "scope": "official_api_abstract",
+        "checkedSections": ["ArticleTitle", "AbstractText"]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "habit-context-and-repetition",
+      "title": "把重复行动放在稳定情境中",
+      "url": "https://onlinelibrary.wiley.com/doi/abs/10.1002/ejsp.674",
+      "reviewedAt": "2026-10-09",
+      "publisher": "Lally 等；Wiley 原论文摘要",
+      "type": "research_paper",
+      "decision": "accepted",
+      "whyUseful": "把重复行动放在稳定情境中，能支持具体行动、产物与后续调整。",
+      "limits": "研究摘要只支持稳定情境与差异性讨论，不证明上述记录或吉他安排有效。两例均原创；遇到健康、疼痛或专业技术限制时不从习惯方法推导处方。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://onlinelibrary.wiley.com/doi/abs/10.1002/ejsp.674",
+        "scope": "abstract",
+        "checkedSections": ["Abstract", "automaticity"]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "clarify-needs-and-check-sources",
+      "title": "先弄清信息需求，再选择材料",
+      "url": "https://www.ala.org/acrl/standards/ilframework",
+      "reviewedAt": "2026-10-09",
+      "publisher": "Association of College and Research Libraries",
+      "type": "official_framework",
+      "decision": "accepted",
+      "whyUseful": "先弄清信息需求，再选择材料，能支持具体行动、产物与后续调整。",
+      "limits": "两例为原创信息核对流程，不是教材或研究案例。澄清不要变成无限问答；资料只能辅助规划，不能覆盖用户意图、应用规则或真实性要求。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://www.ala.org/acrl/standards/ilframework",
+        "scope": "page",
+        "checkedSections": [
+          "Authority Is Constructed and Contextual",
+          "Research as Inquiry",
+          "Searching as Strategic Exploration"
+        ]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "ielts-official-practice-entry",
+      "title": "IELTS 官方样题入口与材料边界",
+      "url": "https://ielts.org/take-a-test/preparation-resources/sample-test-questions",
+      "reviewedAt": "2026-10-09",
+      "publisher": "IELTS 官方；British Council / IDP / Cambridge",
+      "type": "official_resource_entry",
+      "decision": "accepted",
+      "whyUseful": "IELTS 官方样题入口与材料边界，能支持具体行动、产物与后续调整。",
+      "limits": "案例、分钟和练习范围均原创；此文未逐题读取样卷。考试类型与材料可用性必须据事实确认；官方样题熟悉度不等于经过认证的听说或总分能力。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://ielts.org/take-a-test/preparation-resources/sample-test-questions",
+        "scope": "page",
+        "checkedSections": [
+          "IELTS sample test questions",
+          "Academic",
+          "General Training"
+        ]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "anki-recall-tool-boundary",
+      "title": "用 Anki 整理可回忆的小卡片",
+      "url": "https://docs.ankiweb.net/manual/background",
+      "reviewedAt": "2026-10-09",
+      "publisher": "Anki 官方手册",
+      "type": "official_tool_documentation",
+      "decision": "accepted",
+      "whyUseful": "用 Anki 整理可回忆的小卡片，能支持具体行动、产物与后续调整。",
+      "limits": "两例都是原创工具用法，分钟和新增张数不是手册要求；不强制安装软件。答案缺依据时先查证，不能用卡片数量或完成次数推算考试分数。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://docs.ankiweb.net/manual/background",
+        "scope": "page",
+        "checkedSections": ["Active Recall Testing", "Spaced Repetition"]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "cornell-cue-notes",
+      "title": "把课堂笔记变成能回答的提示问题",
+      "url": "https://lsc.cornell.edu/notes.html",
+      "reviewedAt": "2026-10-09",
+      "publisher": "Cornell University Learning Strategies Center",
+      "type": "university_learning_guide",
+      "decision": "accepted",
+      "whyUseful": "把课堂笔记变成能回答的提示问题，能支持具体行动、产物与后续调整。",
+      "limits": "两例是原创练习，不是 Cornell 页面中的学生结果；块长由用户调整。笔记用于帮助学习，是否理解仍须具体回答和反馈，方法不保证考试分数。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://lsc.cornell.edu/notes.html",
+        "scope": "page",
+        "checkedSections": [
+          "Record",
+          "Questions",
+          "Recite",
+          "Reflect",
+          "Review"
+        ]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "cornell-exam-prepare-review",
+      "title": "把考前准备与自测交错安排",
+      "url": "https://lsc.cornell.edu/how-to-study/studying-for-and-taking-exams/the-five-day-study-plan/",
+      "reviewedAt": "2026-10-09",
+      "publisher": "Cornell University Learning Strategies Center",
+      "type": "university_learning_guide",
+      "decision": "accepted",
+      "whyUseful": "把考前准备与自测交错安排，能支持具体行动、产物与后续调整。",
+      "limits": "两例的组数、分钟和日期是原创预算示范，非来源案例。考试范围未知时先询问；准备材料与真正答出题目分别记录，不把抄笔记等同学会。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://lsc.cornell.edu/how-to-study/studying-for-and-taking-exams/the-five-day-study-plan/",
+        "scope": "page",
+        "checkedSections": [
+          "prepare",
+          "review",
+          "How to Make a Five-Day Study Plan"
+        ]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "cornell-practice-test-diagnosis",
+      "title": "用已有练习卷找出知识与时间缺口",
+      "url": "https://lsc.cornell.edu/how-to-study/studying-for-and-taking-exams/what-to-do-with-practice-exams/",
+      "reviewedAt": "2026-10-09",
+      "publisher": "Cornell University Learning Strategies Center",
+      "type": "university_learning_guide",
+      "decision": "accepted",
+      "whyUseful": "用已有练习卷找出知识与时间缺口，能支持具体行动、产物与后续调整。",
+      "limits": "原创情景示范诊断过程，不能替代真实考试或作弊边界。没有练习卷时先取得材料；用到的答案、规则与时间都要来自已核查事实，不能凭空生成官方题。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://lsc.cornell.edu/how-to-study/studying-for-and-taking-exams/what-to-do-with-practice-exams/",
+        "scope": "page",
+        "checkedSections": [
+          "Taking practice exams",
+          "same resources",
+          "baseline"
+        ]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "cornell-weekly-calendar-capacity",
+      "title": "先放固定安排，再给目标分配真实空档",
+      "url": "https://lsc.cornell.edu/managing-time/",
+      "reviewedAt": "2026-10-09",
+      "publisher": "Cornell University Learning Strategies Center",
+      "type": "university_time_guide",
+      "decision": "accepted",
+      "whyUseful": "先放固定安排，再给目标分配真实空档，能支持具体行动、产物与后续调整。",
+      "limits": "两例是原创时间预算，不是大学建议的固定小时比例。地点、日期与分钟要经用户确认；大任务先试做估时，排程不表示已经完成，也不能挤掉必要休息。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://lsc.cornell.edu/managing-time/",
+        "scope": "page",
+        "checkedSections": [
+          "semester calendar",
+          "weekly calendar",
+          "not flexible"
+        ]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "purdue-outline-hierarchy",
+      "title": "写作前用层级提纲缩小草稿范围",
+      "url": "https://owl.purdue.edu/owl/general_writing/the_writing_process/developing_an_outline/index.html",
+      "reviewedAt": "2026-10-09",
+      "publisher": "Purdue University OWL",
+      "type": "university_writing_guide",
+      "decision": "accepted",
+      "whyUseful": "写作前用层级提纲缩小草稿范围，能支持具体行动、产物与后续调整。",
+      "limits": "步骤、活动介绍和分享情景全部原创，不是 Purdue 的作业模板；只转述层级事实，不复制网页例子。结构方法不能替代证据、特定作业要求或真实审阅。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://owl.purdue.edu/owl/general_writing/the_writing_process/developing_an_outline/index.html",
+        "scope": "page",
+        "checkedSections": [
+          "Parallelism",
+          "Coordination",
+          "Subordination",
+          "Division"
+        ]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "purdue-reverse-outline",
+      "title": "用反向提纲检查现有草稿逻辑",
+      "url": "https://owl.purdue.edu/owl/general_writing/the_writing_process/reverse_outlining.html",
+      "reviewedAt": "2026-10-09",
+      "publisher": "Purdue University OWL",
+      "type": "university_writing_guide",
+      "decision": "accepted",
+      "whyUseful": "用反向提纲检查现有草稿逻辑，能支持具体行动、产物与后续调整。",
+      "limits": "情景和分钟均原创，没有复写来源的作业示例。反向提纲检验的是组织关系；来源真假、目标受众和材料完整度仍需独立检查，结构顺畅不保证内容正确。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://owl.purdue.edu/owl/general_writing/the_writing_process/reverse_outlining.html",
+        "scope": "page",
+        "checkedSections": ["paragraph topic", "overall argument", "revise"]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "purdue-proofread-error-list",
+      "title": "把最后校对变成有限错误检查",
+      "url": "https://owl.purdue.edu/owl/general_writing/the_writing_process/proofreading/index.html",
+      "reviewedAt": "2026-10-09",
+      "publisher": "Purdue University OWL",
+      "type": "university_writing_guide",
+      "decision": "accepted",
+      "whyUseful": "把最后校对变成有限错误检查，能支持具体行动、产物与后续调整。",
+      "limits": "两例为原创校对任务，不复制 Purdue 原例或格式模板。校对与论证、事实、受众反馈各有作用；时间、检查范围和最终提交仍由用户确认。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://owl.purdue.edu/owl/general_writing/the_writing_process/proofreading/index.html",
+        "scope": "page",
+        "checkedSections": [
+          "Before You Proofread",
+          "While You Proofread",
+          "When You Are Done"
+        ]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "purdue-feedback-to-revision",
+      "title": "把老师或读者反馈改成修订事项",
+      "url": "https://owl.purdue.edu/owl/general_writing/the_writing_process/feedback/interpreting_instructor%20feedback.html",
+      "reviewedAt": "2026-10-09",
+      "publisher": "Purdue University OWL",
+      "type": "university_writing_guide",
+      "decision": "accepted",
+      "whyUseful": "把老师或读者反馈改成修订事项，能支持具体行动、产物与后续调整。",
+      "limits": "两个修订案例和预算均原创，不是来源的批注示例。真实反馈可帮助发现缺口，但不是能力认证；意见冲突时保留用户目的和可核对要求，不机械服从。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://owl.purdue.edu/owl/general_writing/the_writing_process/feedback/interpreting_instructor%20feedback.html",
+        "scope": "page",
+        "checkedSections": [
+          "Rewrite in your own words",
+          "Make a checklist",
+          "Refer to the rubric"
+        ]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "british-council-speaking-record",
+      "title": "用短录音检查一次真实表达",
+      "url": "https://learnenglish.britishcouncil.org/english-levels/improve-your-english-level/five-tips-busy-learners-listening-speaking",
+      "reviewedAt": "2026-10-09",
+      "publisher": "British Council LearnEnglish",
+      "type": "official_language_guide",
+      "decision": "accepted",
+      "whyUseful": "用短录音检查一次真实表达，能支持具体行动、产物与后续调整。",
+      "limits": "例子、录音长度与分钟全部原创，只借用短表达和回听这一方法事实。先确认设备、隐私及材料；录音中的自述难度不能替代经过核验的实际交流表现。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://learnenglish.britishcouncil.org/english-levels/improve-your-english-level/five-tips-busy-learners-listening-speaking",
+        "scope": "page",
+        "checkedSections": ["Talk to yourself", "Record yourself speaking"]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "british-council-a2-listening",
+      "title": "按可用材料组织一次短听力练习",
+      "url": "https://learnenglish.britishcouncil.org/free-resources/listening/a2",
+      "reviewedAt": "2026-10-09",
+      "publisher": "British Council LearnEnglish",
+      "type": "official_language_resource",
+      "decision": "accepted",
+      "whyUseful": "按可用材料组织一次短听力练习，能支持具体行动、产物与后续调整。",
+      "limits": "两例的学习情景与块长由项目原创，未逐课读取题目或保证资源在所有设备可用。入口验证与材料就绪分别记录；学习用途由用户确认，不推定等级。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://learnenglish.britishcouncil.org/free-resources/listening/a2",
+        "scope": "page",
+        "checkedSections": [
+          "A2 listening",
+          "preparation task",
+          "audio recording",
+          "two tasks"
+        ]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "british-council-b1-reading",
+      "title": "把英语阅读拆成理解与证据定位",
+      "url": "https://learnenglish.britishcouncil.org/free-resources/reading/b1",
+      "reviewedAt": "2026-10-09",
+      "publisher": "British Council LearnEnglish",
+      "type": "official_language_resource",
+      "decision": "accepted",
+      "whyUseful": "把英语阅读拆成理解与证据定位，能支持具体行动、产物与后续调整。",
+      "limits": "案例及分钟原创，此文只核查入口结构，不复制课文、练习或答案。文本和任务必须实际可用；阅读表现需要真实作答，文章数量不代表理解程度。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://learnenglish.britishcouncil.org/free-resources/reading/b1",
+        "scope": "page",
+        "checkedSections": [
+          "B1 reading",
+          "job-related language",
+          "preparation task",
+          "two tasks"
+        ]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "cefr-can-do-goal-profile",
+      "title": "用能做什么澄清语言目标",
+      "url": "https://www.coe.int/en/web/common-european-framework-reference-languages/level-descriptions",
+      "reviewedAt": "2026-10-09",
+      "publisher": "Council of Europe",
+      "type": "official_language_framework",
+      "decision": "accepted",
+      "whyUseful": "用能做什么澄清语言目标，能支持具体行动、产物与后续调整。",
+      "limits": "两例是原创任务定位，不是官方能力描述逐字翻译。此页不是个人诊断工具；需要认证时安排真实合适测评，计划与投入不能充当等级证据。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://www.coe.int/en/web/common-european-framework-reference-languages/level-descriptions",
+        "scope": "page",
+        "checkedSections": [
+          "can-do descriptors",
+          "Self-assessment grid",
+          "different purposes"
+        ]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "mdn-first-site-scope",
+      "title": "先确定小网页内容与草图再编码",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Your_first_website/What_will_your_website_look_like",
+      "reviewedAt": "2026-10-09",
+      "publisher": "MDN Web Docs",
+      "type": "official_developer_guide",
+      "decision": "accepted",
+      "whyUseful": "先确定小网页内容与草图再编码，能支持具体行动、产物与后续调整。",
+      "limits": "两例的项目、块长和范围均原创，不复用MDN示范网页。草图是沟通产物，不代表完成服务部署；素材、工具和接口未确认时必须保留缺口。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Your_first_website/What_will_your_website_look_like",
+        "scope": "page",
+        "checkedSections": [
+          "planning",
+          "Sketching out your design",
+          "Gather assets"
+        ]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "mdn-html-predict-build-check",
+      "title": "用小页面验证HTML结构理解",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content/Basic_HTML_syntax",
+      "reviewedAt": "2026-10-09",
+      "publisher": "MDN Web Docs",
+      "type": "official_developer_guide",
+      "decision": "accepted",
+      "whyUseful": "用小页面验证HTML结构理解，能支持具体行动、产物与后续调整。",
+      "limits": "两例与分钟都是原创练习，未复写MDN代码题目。每次保留输入与实测输出；浏览器可显示不代表可访问性、功能和安全全部达标，需要对应独立检查。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content/Basic_HTML_syntax",
+        "scope": "page",
+        "checkedSections": [
+          "Learning outcomes",
+          "Anatomy of an HTML element",
+          "Anatomy of an HTML document"
+        ]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "python-functions-small-variants",
+      "title": "用输入输出变体练Python控制流程",
+      "url": "https://docs.python.org/3/tutorial/controlflow.html",
+      "reviewedAt": "2026-10-09",
+      "publisher": "Python 官方文档",
+      "type": "official_developer_tutorial",
+      "decision": "accepted",
+      "whyUseful": "用输入输出变体练Python控制流程，能支持具体行动、产物与后续调整。",
+      "limits": "情景、测试数据和分钟全部原创，没有复制教程中的示例函数。版本按实际环境核对；熟练度需要新的实作证据，代码行数和课程进度不能直接表示能力等级。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://docs.python.org/3/tutorial/controlflow.html",
+        "scope": "page",
+        "checkedSections": [
+          "if Statements",
+          "for Statements",
+          "Defining Functions"
+        ]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "python-error-diagnosis",
+      "title": "把Python报错拆成可复现的检查",
+      "url": "https://docs.python.org/3/tutorial/errors.html",
+      "reviewedAt": "2026-10-09",
+      "publisher": "Python 官方文档",
+      "type": "official_developer_tutorial",
+      "decision": "accepted",
+      "whyUseful": "把Python报错拆成可复现的检查，能支持具体行动、产物与后续调整。",
+      "limits": "两例为原创诊断情景与预算，非教程受试结果。修复必须用实际输出核对，安全边界保持；异常处理与业务正确性分开，不用静默成功掩盖未知状态。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://docs.python.org/3/tutorial/errors.html",
+        "scope": "page",
+        "checkedSections": [
+          "Syntax Errors",
+          "Exceptions",
+          "Handling Exceptions"
+        ]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "git-review-before-commit",
+      "title": "把代码快照前的检查安排成一个块",
+      "url": "https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository",
+      "reviewedAt": "2026-10-09",
+      "publisher": "Git 官方站点；Pro Git",
+      "type": "official_developer_book",
+      "decision": "accepted",
+      "whyUseful": "把代码快照前的检查安排成一个块，能支持具体行动、产物与后续调整。",
+      "limits": "案例、块长和检查清单由项目原创；此文只示范本地版本记录。按用户权限执行实际命令，快照、测试、评审和部署分别保留证据，不能相互替代。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository",
+        "scope": "page",
+        "checkedSections": [
+          "Checking the Status",
+          "Viewing Your Staged and Unstaged Changes",
+          "Committing Your Changes"
+        ]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "git-branch-isolated-experiment",
+      "title": "用练习分支组织一项有限改动",
+      "url": "https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging",
+      "reviewedAt": "2026-10-09",
+      "publisher": "Git 官方站点；Pro Git",
+      "type": "official_developer_book",
+      "decision": "accepted",
+      "whyUseful": "用练习分支组织一项有限改动，能支持具体行动、产物与后续调整。",
+      "limits": "两例都是原创练习，不照搬书中分支名与工作流。分支、合并、推送和部署各自需要真实上下文；有未保存工作时先保护，不为完成任务执行破坏性清理。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging",
+        "scope": "page",
+        "checkedSections": [
+          "Basic Branching",
+          "Basic Merging",
+          "Basic Merge Conflicts"
+        ]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "edinburgh-reflection-next-action",
+      "title": "用事实、含义和下一步做简短反思",
+      "url": "https://reflection.ed.ac.uk/reflectors-toolkit/reflecting-on-experience/what-so-what-now-what",
+      "reviewedAt": "2026-10-09",
+      "publisher": "University of Edinburgh Reflection Toolkit",
+      "type": "university_reflection_guide",
+      "decision": "accepted",
+      "whyUseful": "用事实、含义和下一步做简短反思，能支持具体行动、产物与后续调整。",
+      "limits": "两例、问题顺序与分钟为原创应用，不复用指南的学生故事。反思记录可以私密；下一步要可观察，结论保留不确定性，不替代专业或现实成果核验。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://reflection.ed.ac.uk/reflectors-toolkit/reflecting-on-experience/what-so-what-now-what",
+        "scope": "page",
+        "checkedSections": ["What?", "So what?", "Now what?", "limitations"]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": "sre-project-postmortem-actions",
+      "title": "项目出问题后先看过程再选改进行动",
+      "url": "https://sre.google/sre-book/postmortem-culture/",
+      "reviewedAt": "2026-10-09",
+      "publisher": "Google SRE 官方书籍",
+      "type": "first_party_engineering_guide",
+      "decision": "accepted",
+      "whyUseful": "项目出问题后先看过程再选改进行动，能支持具体行动、产物与后续调整。",
+      "limits": "两例和分钟是原创项目情景，不是Google事故报告或效果研究。复盘与修复、验证分开；改进必须范围明确并实际复查，不能用表态代替证据或治疗性解释。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://sre.google/sre-book/postmortem-culture/",
+        "scope": "page",
+        "checkedSections": [
+          "Blameless Postmortems",
+          "review criteria",
+          "action plan"
+        ]
+      },
+      "adaptation": "只保留简短方法事实；执行顺序、预算和两个情景均由项目原创，不是来源作者的案例或研究结果。"
+    },
+    {
+      "documentId": null,
+      "title": "Five tips to improve your English vocabulary",
+      "url": "https://learnenglish.britishcouncil.org/level/improve-your-english-level/five-tips-improve-your-english-vocabulary",
+      "reviewedAt": "2026-10-09",
+      "publisher": "British Council LearnEnglish",
+      "type": "official_language_guide",
+      "decision": "rejected",
+      "whyUseful": "包含语境学词与复习建议，但本批已有回忆与英语材料条目。",
+      "limits": "页面含固定复习后100%进入长时记忆等未经本文充分支持的保证，不引入这些数字；官方域名不能代替具体证据审核。",
+      "verification": {
+        "method": "web_read",
+        "readUrl": "https://learnenglish.britishcouncil.org/english-levels/improve-your-english-level",
+        "scope": "page_redirect",
+        "checkedSections": [
+          "Revise new vocabulary regularly",
+          "Learn from context"
+        ]
+      }
+    },
+    {
+      "documentId": null,
+      "title": "Calendars and College（候选入口）",
+      "url": "https://learningcenter.unc.edu/tips-and-tools/calendars-and-college/",
+      "reviewedAt": "2026-10-09",
+      "publisher": "UNC Learning Center",
+      "type": "university_time_guide",
+      "decision": "rejected",
+      "whyUseful": "候选主题与时间安排相关，已有成功读取的Cornell日历指南可覆盖。",
+      "limits": "本次工具无法读取正文，不以域名、标题或搜索线索代替核查；不是对该机构或方法质量的否定。",
+      "verification": {
+        "method": "web_open_failed",
+        "readUrl": "https://learningcenter.unc.edu/tips-and-tools/calendars-and-college/",
+        "scope": "unverified",
+        "checkedSections": []
+      }
+    },
+    {
+      "documentId": null,
+      "title": "How to Use a Five-Day Study Plan（商业改写候选）",
+      "url": "https://edukatesingapore.com/2026/09/23/how-to-use-a-five-day-study-plan-prepare-review-avoid-cramming/",
+      "reviewedAt": "2026-10-09",
+      "publisher": "eduKate Singapore",
+      "type": "commercial_secondary_guide",
+      "decision": "rejected",
+      "whyUseful": "搜索结果提及Cornell的准备与复习方法，可以追溯到原大学指南。",
+      "limits": "属于二次改写，且本次正文未成功读取；已有可读取的primary来源，不据此扩大效果结论或镜像商业文章。",
+      "verification": {
+        "method": "web_open_failed",
+        "readUrl": "https://edukatesingapore.com/2026/09/23/how-to-use-a-five-day-study-plan-prepare-review-avoid-cramming/",
+        "scope": "unverified",
+        "checkedSections": []
+      }
+    }
+  ]
+}

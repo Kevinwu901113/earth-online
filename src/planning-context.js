@@ -1,4 +1,5 @@
 import { sourceSchema } from "./schemas.js";
+import { analyzeIntent, isRetryMessage } from "./intent.js";
 
 const maxChars = 7200;
 const topK = 6;
@@ -22,12 +23,36 @@ export function planningQuery(job, context) {
           .slice(0, 500)
       : "";
   }
-  if (job.kind === "chat")
-    return (
-      context.messages?.find(
-        (m) => m.id === job.input.messageId && m.role === "user",
-      )?.content ?? ""
-    ).slice(0, 500);
+  if (job.kind === "chat") {
+    const intent = context.intent ?? analyzeIntent(job, context);
+    if (!intent.shouldRetrieve) return "";
+    const message = context.messages?.find(
+      (m) => m.id === job.input.messageId && m.role === "user",
+    );
+    const users = (context.messages ?? []).filter(
+      (m) => m.role === "user" && !isRetryMessage(m.content),
+    );
+    const current = isRetryMessage(message?.content ?? "")
+      ? (users.at(-1)?.content ?? "")
+      : (message?.content ?? "");
+    const followup =
+      /上面|之前|继续|按这个|这些|那就|改成|现在只有|只有|每次|每天|基础|分钟|小时/.test(
+        current,
+      ) && !/新目标|另一个目标|还想|换个目标/.test(current);
+    const facts = followup
+      ? users
+          .filter((m) => m.id !== message?.id)
+          .slice(-3)
+          .map((m) => m.content)
+      : [];
+    const goal = (context.goals ?? []).find(
+      (g) => g.id === intent.targetGoalId && !g.deletedAt,
+    );
+    return [current, ...facts, goal?.title, goal?.base]
+      .filter(Boolean)
+      .join("\n")
+      .slice(0, 500);
+  }
   return "";
 }
 
@@ -128,7 +153,7 @@ export async function retrieveKnowledge(
       timer = setTimeout(() => {
         retrievalAbort.abort();
         reject(new Error("retrieval_timeout"));
-      }, timeoutMs);
+      }, Math.ceil(timeoutMs));
       onAbort = () => {
         retrievalAbort.abort();
         reject(signal.reason ?? new Error("aborted"));

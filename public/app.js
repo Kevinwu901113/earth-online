@@ -1,3 +1,4 @@
+import { planningText } from "./planning-copy.js";
 import { renderPersonalTree } from "./skill-tree/personal-tree-ui.js";
 (() => {
   "use strict";
@@ -442,7 +443,7 @@ import { renderPersonalTree } from "./skill-tree/personal-tree-ui.js";
   }
   function stageCard(stage, g, index, draft, completed = false) {
     const current = !draft && !completed && index === g.stage;
-    return `<section class="stage-card"><div class="stage-card-title"><span class="stage-index">${String(index + 1).padStart(2, "0")}</span><div><small>${draft ? "待确认" : index < g.stage || completed ? "已通过" : current ? "当前阶段" : "后续阶段"}</small><h4>${esc(stage.name)}</h4></div></div>${actionCards(stageActions(stage, draft ? g.draft.route.minutes : g.minutes), g, current && g.status === "active")}<details class="task-details"><summary>完成标准与挑战</summary>${prose(stage.criterion)}<p>挑战：${esc(stage.challenge)}</p></details>${stage.steps ? `<details class="task-details"><summary>练习提示</summary>${prose(stage.steps)}</details>` : ""}</section>`;
+    return `<section class="stage-card"><div class="stage-card-title"><span class="stage-index">${String(index + 1).padStart(2, "0")}</span><div><small>${draft ? "待确认" : index < g.stage || completed ? "已通过" : current ? "当前阶段" : "后续阶段"}</small><h4>${esc(stage.name)}</h4></div></div>${actionCards(stageActions(stage, draft ? g.draft.route.minutes : g.minutes), g, current && g.status === "active")}<details class="task-details"><summary>完成标准与挑战</summary>${prose(stage.criterion)}<p>挑战：${esc(stage.challenge)}</p></details>${stage.steps ? `<details class="task-details"><summary>练习提示</summary>${prose(planningText(stage.steps))}</details>` : ""}</section>`;
   }
   function scheduleGoal(id) {
     const g = state.goals.find((g) => g.id === id);
@@ -501,7 +502,7 @@ import { renderPersonalTree } from "./skill-tree/personal-tree-ui.js";
           const plan = state.skillPlans?.[g.id],
             job = jobs.find((j) => j.id === g.skillJobId),
             pending = job && ["queued", "running"].includes(job.status);
-          return `<section class="skill-goal"><h4>${esc(g.title)}</h4>${pending ? '<p role="status">正在生成能力分支…</p>' : btn(plan ? "更新能力分支" : "生成能力分支", "generateSkills", g.id)}${job?.status === "failed" ? '<p role="alert">本次生成未完成，可重新生成；已有技能保留。</p>' : ""}${plan ? prose(plan.summary) + plan.tasks.map((t) => `<details><summary>${esc(t.name)} · ${t.minutes} 分钟</summary>${prose(t.purpose)}<ol>${t.actions.map((a) => `<li><strong>${esc(a.name)} · ${a.minutes} 分钟</strong>${prose(a.detail)}</li>`).join("")}</ol>${t.materialQuestion ? prose(t.materialQuestion) : ""}</details>`).join("") : ""}</section>`;
+          return `<section class="skill-goal"><h4>${esc(g.title)}</h4>${pending ? '<p role="status">正在生成能力分支…</p>' : btn(plan ? "更新能力分支" : "生成能力分支", "generateSkills", g.id)}${job?.status === "failed" ? '<p role="alert">本次生成未完成，可重新生成；已有技能保留。</p>' : ""}${plan ? prose(planningText(plan.summary)) + plan.tasks.map((t) => `<details><summary>${esc(t.name)} · ${t.minutes} 分钟</summary>${prose(planningText(t.purpose))}<ol>${t.actions.map((a) => `<li><strong>${esc(a.name)} · ${a.minutes} 分钟</strong>${prose(planningText(a.detail))}</li>`).join("")}</ol>${t.materialQuestion ? prose(planningText(t.materialQuestion, "开始前，请先准备练习材料。")) : ""}</details>`).join("") : ""}</section>`;
         })
         .join("") +
       (!state.goals.some((g) => !g.deletedAt)
@@ -600,7 +601,7 @@ import { renderPersonalTree } from "./skill-tree/personal-tree-ui.js";
         `<p class="status">${questKind(g)} · ${label(g.status)} · 每天 ${g.minutes} 分钟 · 路线版本 ${g.revision}</p><details class="task-details"><summary>完成条件与起点</summary><h4>完成条件</h4>${prose(g.criterion)}<h4>起点</h4>${prose(g.base)}</details>` +
         planningNotice(g) +
         (g.draft
-          ? `<h4>待确认的${g.revision ? "调整" : "路线"}</h4><details class="task-details"><summary>规划说明</summary>${prose(g.draft.route.summary)}</details>${g.draft.route.stages.map((s, i) => stageCard(s, g, g.stage + i, true)).join("")}<p class="tiny-note">确认后可以把事项安排到一天里，再调整时间块。</p>${sources(g.draft.route.sources)}${btn("确认这条路线", "confirmGoal", g.id, "solid")}`
+          ? `<h4>待确认的${g.revision ? "调整" : "路线"}</h4><details class="task-details"><summary>规划说明</summary>${prose(planningText(g.draft.route.summary, "从第一阶段开始，按你的时间逐步练习。"))}</details>${g.draft.route.stages.map((s, i) => stageCard(s, g, g.stage + i, true)).join("")}<p class="tiny-note">确认后可以把事项安排到一天里，再调整时间块。</p>${sources(g.draft.route.sources)}${btn("确认这条路线", "confirmGoal", g.id, "solid")}`
           : "") +
         g.stages
           .map((s, i) => stageCard(s, g, i, false, stagesCompleted))
@@ -668,15 +669,19 @@ import { renderPersonalTree } from "./skill-tree/personal-tree-ui.js";
           return [];
         seen.add(url.href);
         return [
-          { ...s, url: url.href, domain: url.hostname.replace(/^www\./, "") },
+          {
+            ...s,
+            note: planningText(s.note),
+            url: url.href,
+            domain: url.hostname.replace(/^www\./, ""),
+          },
         ];
       } catch {
         return [];
       }
     });
-    if (!references.length)
-      return empty ? '<p class="tiny-note">暂无可显示的规划依据。</p>' : "";
-    return `<details class="source-disclosure" data-chat-details="sources"><summary><span>规划依据</span><small>${references.length} 条来源</small></summary><div class="source-list">${references.map((s) => `<article class="source-card"><a class="source-title" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" title="${esc(s.title ?? s.domain)}">${esc(sourceText(s.title || s.domain, 90))}<span aria-hidden="true"> ↗</span></a><div class="source-meta"><span>${esc(s.domain)}</span>${s.retrievedAt && Number.isFinite(Date.parse(s.retrievedAt)) ? `<time datetime="${esc(s.retrievedAt)}">检索 ${esc(localDate(s.retrievedAt))}</time>` : ""}</div>${s.note ? `<p class="source-reason">${esc(sourceText(s.note))}</p>` : ""}</article>`).join("")}</div></details>`;
+    if (!references.length) return "";
+    return `<details class="source-disclosure" data-chat-details="sources"><summary><span>规划依据</span><small>${references.length} 条来源</small></summary><div class="source-list">${references.map((s) => `<article class="source-card"><a class="source-title" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" title="${esc(s.title ?? s.domain)}">${esc(sourceText(s.title || s.domain, 90))}<span aria-hidden="true"> ↗</span></a><div class="source-meta"><span>${esc(s.domain)}</span>${s.retrievedAt && Number.isFinite(Date.parse(s.retrievedAt)) ? `<time datetime="${esc(s.retrievedAt)}">检索 ${esc(localDate(s.retrievedAt))}</time>` : ""}</div>${s.note ? `<p class="source-reason">${esc(sourceText(planningText(s.note)))}</p>` : ""}</article>`).join("")}</div></details>`;
   }
   function goalOptions(value) {
     return `<label>关联任务<select name="goal"><option value="">自由行动</option>${state.goals
@@ -849,7 +854,7 @@ import { renderPersonalTree } from "./skill-tree/personal-tree-ui.js";
               const proposals = m.proposals ?? [];
               const structured = guidance || proposals.length;
               const reply = [
-                String(m.content ?? ""),
+                planningText(m.content),
                 ...(m.questions ?? []).map(
                   (q) =>
                     `${q.question}\n${q.options.join(" / ")}\n也可以直接补充。`,
@@ -889,7 +894,7 @@ import { renderPersonalTree } from "./skill-tree/personal-tree-ui.js";
   }
   function guidanceView(g) {
     const total = g.steps.reduce((sum, s) => sum + s.minutes, 0);
-    return `<section class="chat-guidance" aria-label="可视化行动建议"><div class="guidance-heading"><div><small>下一步 · 建议</small><h4>${esc(g.title)}</h4></div><span>${total}<small>分钟</small></span></div><p>${esc(g.summary)}</p><ol class="guidance-steps">${g.steps.map((s, i) => `<li class="guidance-step ${s.kind}"><div class="guidance-step-top"><span class="guidance-number">${String(i + 1).padStart(2, "0")}</span><span class="chat-kind ${s.kind}">${chatKind(s.kind)}</span><span class="guidance-minutes">${s.minutes} 分钟</span></div><b>${esc(s.title)}</b>${chatDuration(s.minutes, total, s.kind)}${s.detail ? `<details class="chat-step-detail" data-chat-details="step-${i}"><summary>怎么做</summary><p>${esc(s.detail)}</p></details>` : ""}</li>`).join("")}</ol><div class="guidance-footnote"><span>块的长度表示建议时长</span><span>尚未安排</span></div>${sources(g.sources ?? [], { empty: false })}</section>`;
+    return `<section class="chat-guidance" aria-label="可视化行动建议"><div class="guidance-heading"><div><small>下一步 · 建议</small><h4>${esc(g.title)}</h4></div><span>${total}<small>分钟</small></span></div><p>${esc(planningText(g.summary))}</p><ol class="guidance-steps">${g.steps.map((s, i) => `<li class="guidance-step ${s.kind}"><div class="guidance-step-top"><span class="guidance-number">${String(i + 1).padStart(2, "0")}</span><span class="chat-kind ${s.kind}">${chatKind(s.kind)}</span><span class="guidance-minutes">${s.minutes} 分钟</span></div><b>${esc(s.title)}</b>${chatDuration(s.minutes, total, s.kind)}${s.detail ? `<details class="chat-step-detail" data-chat-details="step-${i}"><summary>怎么做</summary><p>${esc(planningText(s.detail))}</p></details>` : ""}</li>`).join("")}</ol><div class="guidance-footnote"><span>块的长度表示建议时长</span><span>尚未安排</span></div>${sources(g.sources ?? [], { empty: false })}</section>`;
   }
   function proposalState(c, at) {
     const g = state.goals.find((g) => g.id === (c.goal ?? c.id));

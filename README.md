@@ -85,7 +85,7 @@ npm run knowledge -- status
 npm run knowledge -- search '我想每天练英语阅读，但容易忘记单词'
 ```
 
-`setup` 创建知识表及索引；`seed` 导入 8 条附原研究或官方链接的规划参考。首次运行 `seed` 会将公开模型文件下载到 `var/models/`，后续使用本地缓存，无需另配 embedding API 密钥。初始化后重启 API 和 worker。
+`setup` 创建知识表及索引；`seed` 导入 28 条附原研究或官方链接的规划参考。首次运行 `seed` 会将公开模型文件下载到 `var/models/`，后续使用本地缓存，无需另配 embedding API 密钥。初始化后重启 API 和 worker。
 
 支持导入 UTF-8 Markdown、纯文本和 JSON 文档：
 
@@ -143,10 +143,14 @@ npm run test:e2e
 
 原有 GitBook 同步配置及协作资料继续保留。该仓库没有内置模型密钥，也不会自动部署覆盖已发布的 Sites 演示。
 
-
 ## 个人技能树
+
 正式站底部「技能树」展示账号的长期能力树：我 → 身心 / 认知 / 实践。确认目标路线后自动生成能力分支；已有目标可在技能树页生成或更新。不同目标复用能力，目标分数和路线阶段不作为技能节点。支持分支聚焦、重点预览、滚轮缩放与拖动。
 
 生成走正式 DSH worker 的 `skills` 作业，`skills.generate` 命令沿用登录鉴权、幂等请求和用户版本检查。结果使用 earth.plan.v3 + earth.tree.patch.v1，在事务内校验再保存到玩家 JSON 状态的 personalTree / skillPlans；旧账号无需数据库迁移，首次读取提供基础骨架。已删除目标、被替代作业及过期树版本不能覆盖数据。生成不发放经验，也不修改既有进度。
 
 共享解析器位于 src/skill-tree，正式站不依赖 tools/agent-workbench。工作台使用同一合并器，保留独立对话和存储，可单独移除。此次不包含已撤回的理解/路线 decision 协议。
+
+## Agent 规划质量与输出约束
+
+[输出 Harness 和意图处理](docs/agent-harness.md)说明 Schema、最多三次纠错、预算和操作边界；[资料筛选记录](docs/knowledge-curation.md)记录规划知识库的来源、适用边界及原创行动案例。RAG 使用与混合检索见 [RAG 配置](docs/rag.md)，测试范围与真实模型结果见 [本地验收记录](docs/agent-validation.md)。使用 `npm run contracts` 从实际运行时 Schema 导出契约。

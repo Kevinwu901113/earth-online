@@ -1,3 +1,4 @@
+import { planningText } from "./planning-copy.js";
 import { renderPersonalTree } from "./skill-tree/personal-tree-ui.js";
 import { skillIcons } from "./skill-tree/skill-icons.js";
 
@@ -355,7 +356,7 @@ function render() {
       main.innerHTML =
         back("tasks", "任务列表") +
         head("ONE SMALL STEP", t.title, "footprints", g?.title || "我的行动") +
-        `<div class="eg-task-meta"><span>${ic("clock-3")}${t.minutes} 分钟</span><span>${ic(t.done ? "circle-check" : "compass")}${t.done ? "今天已记录" : "按自己的节奏"}</span></div>${t.purpose ? `<p class="eg-muted">${esc(t.purpose)}</p>` : ""}<h3>怎么开始</h3><ol class="eg-steps">${(t.steps.length ? t.steps : [{ name: t.title, detail: g?.stages[g.stage]?.steps || "按你的安排完成这项行动。" }]).map((s) => `<li><h3>${esc(s.name)}</h3><p>${esc(s.detail)}</p></li>`).join("")}</ol>${t.resources.map((r) => `<div class="eg-resource"><small class="eg-inline">${ic("box")}用到什么</small><p>${esc(r.name)}</p><p class="eg-muted">${esc(r.locator)}</p>${r.url && /^https?:\/\//.test(r.url) ? `<a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">打开资源 ↗</a>` : ""}${r.question ? `<p>${esc(r.question)}</p>` : ""}</div>`).join("")}${t.readiness === "needs_material" ? `<p class="eg-task-tip">${esc(t.materialQuestion || "开始前，请先准备练习材料。")}</p>` : ""}<div>${skillTags(t.skills)}</div>${t.done ? '<p class="eg-task-tip">今天的投入已记录，经验以服务器记录为准。</p>' : `<form data-form="record"><label for="actual-minutes">实际投入（分钟）</label><input id="actual-minutes" name="minutes" type="number" value="${t.minutes}" min="1" max="1440" required><label for="record-note">想留下的话 · 可选</label><textarea id="record-note" name="note" rows="2" maxlength="3000"></textarea><p class="eg-error" role="alert"></p><button class="eg-primary" type="submit">${ic("check")}我完成了</button></form>`}${g ? `<button class="eg-back" data-goal="${g.id}">查看这条主线的路线</button>` : ""}`;
+        `<div class="eg-task-meta"><span>${ic("clock-3")}${t.minutes} 分钟</span><span>${ic(t.done ? "circle-check" : "compass")}${t.done ? "今天已记录" : "按自己的节奏"}</span></div>${t.purpose ? `<p class="eg-muted">${esc(planningText(t.purpose))}</p>` : ""}<h3>怎么开始</h3><ol class="eg-steps">${(t.steps.length ? t.steps : [{ name: t.title, detail: g?.stages[g.stage]?.steps || "按你的安排完成这项行动。" }]).map((s) => `<li><h3>${esc(s.name)}</h3><p>${esc(planningText(s.detail))}</p></li>`).join("")}</ol>${t.resources.map((r) => `<div class="eg-resource"><small class="eg-inline">${ic("box")}用到什么</small><p>${esc(r.name)}</p><p class="eg-muted">${esc(planningText(r.locator))}</p>${r.url && /^https?:\/\//.test(r.url) ? `<a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">打开资源 ↗</a>` : ""}${r.question ? `<p>${esc(planningText(r.question))}</p>` : ""}</div>`).join("")}${t.readiness === "needs_material" ? `<p class="eg-task-tip">${esc(planningText(t.materialQuestion, "开始前，请先准备练习材料。"))}</p>` : ""}<div>${skillTags(t.skills)}</div>${t.done ? '<p class="eg-task-tip">今天的投入已记录，经验以服务器记录为准。</p>' : `<form data-form="record"><label for="actual-minutes">实际投入（分钟）</label><input id="actual-minutes" name="minutes" type="number" value="${t.minutes}" min="1" max="1440" required><label for="record-note">想留下的话 · 可选</label><textarea id="record-note" name="note" rows="2" maxlength="3000"></textarea><p class="eg-error" role="alert"></p><button class="eg-primary" type="submit">${ic("check")}我完成了</button></form>`}${g ? `<button class="eg-back" data-goal="${g.id}">查看这条主线的路线</button>` : ""}`;
     }
   } else if (page === "goal") {
     const g = goals().find((g) => g.id === goalId);
@@ -367,7 +368,7 @@ function render() {
     main.innerHTML =
       back("tasks", "我的主线") +
       head("YOUR ROUTE", g.title, "route") +
-      `<div class="eg-task-meta"><span>${ic("flag")}${status(g.status)}</span><span>${ic("clock-3")}每次 ${g.minutes} 分钟</span></div><p class="eg-muted">${esc(g.base)}</p>${g.status === "draft" ? jobNotice("route", g.routeJobId) + primary(g.draft ? "查看路线并确认" : "继续准备路线", "resume", g.id) : ""}${(p?.strategy || g.stages.map((s, i) => ({ name: s.name, approach: s.steps, timing: i === g.stage ? "现在" : "接下来" }))).map((s) => `<section class="eg-route-phase"><small>${esc(s.timing)}</small><h3>${esc(s.name)}</h3><p>${esc(s.approach)}</p></section>`).join("")}${
+      `<div class="eg-task-meta"><span>${ic("flag")}${status(g.status)}</span><span>${ic("clock-3")}每次 ${g.minutes} 分钟</span></div><p class="eg-muted">${esc(g.base)}</p>${g.status === "draft" ? jobNotice("route", g.routeJobId) + primary(g.draft ? "查看路线并确认" : "继续准备路线", "resume", g.id) : ""}${(p?.strategy || g.stages.map((s, i) => ({ name: s.name, approach: s.steps, timing: i === g.stage ? "现在" : "接下来" }))).map((s) => `<section class="eg-route-phase"><small>${esc(s.timing)}</small><h3>${esc(s.name)}</h3><p>${esc(planningText(s.approach))}</p></section>`).join("")}${
         g.status === "active"
           ? `<h3 style="margin-top:25px">当前任务</h3>${list
               .filter((t) => t.goal === g.id)
@@ -585,7 +586,7 @@ function renderIntake(force = false) {
         : "主线已加入";
     if (g.draft) {
       const r = g.draft.route;
-      body = `<h3>${esc(g.title)}</h3><table class="eg-summary"><tbody><tr><th>起点</th><td>${esc(g.base)}</td></tr><tr><th>节奏</th><td>每次 ${r.minutes} 分钟</td></tr><tr><th>方向</th><td>${esc(r.summary)}</td></tr></tbody></table><ol class="eg-steps">${r.stages.map((s) => `<li><h3>${esc(s.name)}</h3><p>${esc(s.exercise)}</p></li>`).join("")}</ol>${primary("确认路线并加入", "confirm-route", g.id)}<p class="eg-muted">确认后会生成具体任务和能力分支。可以先关闭，稍后继续。</p>`;
+      body = `<h3>${esc(g.title)}</h3><table class="eg-summary"><tbody><tr><th>起点</th><td>${esc(g.base)}</td></tr><tr><th>节奏</th><td>每次 ${r.minutes} 分钟</td></tr><tr><th>方向</th><td>${esc(planningText(r.summary, "从第一阶段开始，按你的时间逐步练习。"))}</td></tr></tbody></table><ol class="eg-steps">${r.stages.map((s) => `<li><h3>${esc(s.name)}</h3><p>${esc(planningText(s.exercise))}</p></li>`).join("")}</ol>${primary("确认路线并加入", "confirm-route", g.id)}<p class="eg-muted">确认后会生成具体任务和能力分支。可以先关闭，稍后继续。</p>`;
     } else
       body =
         jobNotice("route", g.routeJobId) +
@@ -611,7 +612,7 @@ function renderIntake(force = false) {
       : proposals.length
         ? "从这个方向开始？"
         : "一起找到下一步";
-    body = `${answer.content ? `<p class="eg-muted">${esc(answer.content)}</p>` : ""}`;
+    body = `${answer.content ? `<p class="eg-muted">${esc(planningText(answer.content))}</p>` : ""}`;
     if (questions.length) {
       body += `<form data-intake-form="answers">${questions.map((q, i) => `<section class="eg-question"><h3>${esc(q.question)}</h3><div class="eg-options">${q.options.map((o) => `<button type="button" class="eg-option" data-answer="${i}" data-value="${esc(o)}" aria-pressed="false">${esc(o)}</button>`).join("")}</div><label for="answer-${i}">补充或自己填写</label><textarea id="answer-${i}" name="answer-${i}" rows="1" maxlength="1200" placeholder="也可以直接告诉我…"></textarea></section>`).join("")}<button class="eg-primary" type="submit">继续 ${ic("arrow-right")}</button></form>`;
     } else if (proposals.length) {

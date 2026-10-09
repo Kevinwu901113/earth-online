@@ -113,6 +113,23 @@ for (const scenario of [
   },
   { kind: "route", output: routeOutput },
   {
+    kind: "review",
+    label: "malformed JSON repaired through a fresh SDK subprocess",
+    raw: '{"summary":"PRIVATE_FAILED_OUTPUT",}',
+    output: { summary: "纠错后的完整复盘" },
+    repair: true,
+  },
+  {
+    kind: "route",
+    label: "schema mismatch repaired without coercion",
+    output: routeOutput,
+    repairOutput: {
+      ...routeOutput,
+      stages: [{ ...routeOutput.stages[0], steps: ["PRIVATE_FAILED_STEPS"] }],
+    },
+    repair: true,
+  },
+  {
     kind: "route",
     label: "RAG source verified through knowledge tool",
     tool: "earth_knowledge",
@@ -240,6 +257,12 @@ for (const scenario of [
         sawContract ||=
           JSON.stringify(body.messages).includes("输出契约") &&
           JSON.stringify(body.messages).includes("maxLength");
+        if (scenario.repair && requests >= 3) {
+          const prompt = JSON.stringify(body.messages);
+          assert.ok(prompt.includes("应用校验未通过"));
+          assert.ok(!prompt.includes("PRIVATE_FAILED_OUTPUT"));
+          assert.ok(!prompt.includes("PRIVATE_FAILED_STEPS"));
+        }
         seenTools = body.tools?.map((t) => t.name) ?? [];
         sawToolResult ||= body.messages.some(
           (m) =>
@@ -296,7 +319,11 @@ for (const scenario of [
             index: 0,
             delta: {
               type: "text_delta",
-              text: scenario.raw ?? JSON.stringify(scenario.output),
+              text:
+                scenario.repair && requests >= 3
+                  ? JSON.stringify(scenario.output)
+                  : (scenario.raw ??
+                    JSON.stringify(scenario.repairOutput ?? scenario.output)),
             },
           });
         }
@@ -336,19 +363,31 @@ for (const scenario of [
           DSH_REASONING_EFFORT: scenario.effort ?? "high",
         });
         if (scenario.lab) cfg.labTrace = { calls: [] };
+        const messageId = randomUUID();
         const pending = new (scenario.lab ? WorkbenchAgent : DshAgent)(cfg).run(
           {
             id: randomUUID(),
             user_id: randomUUID(),
             kind: scenario.kind,
-            input: { messageId: randomUUID() },
+            input: { messageId },
           },
           {
             profile: { name: "Test" },
             goals: [],
             records: [],
             notes: [],
-            messages: [],
+            messages:
+              scenario.kind === "chat"
+                ? [
+                    {
+                      id: messageId,
+                      role: "user",
+                      content: scenario.output?.guidance
+                        ? "请帮我规划今天5分钟的整理桌面"
+                        : "你好",
+                    },
+                  ]
+                : [],
             submissions: [],
             standards: [],
             knowledge: scenario.knowledge,
@@ -374,7 +413,14 @@ for (const scenario of [
         else
           assert.deepEqual(await pending, scenario.expected ?? scenario.output);
         assert.equal(sawContract, true);
-        assert.equal(requests, 2);
+        const repairable =
+          scenario.invalid ||
+          [
+            "output_json_invalid",
+            "output_schema_invalid",
+            "intent_mismatch",
+          ].includes(scenario.failure);
+        assert.equal(requests, scenario.repair ? 3 : repairable ? 4 : 2);
         assert.equal(sawToolResult, true);
         if (scenario.lab)
           assert.deepEqual(cfg.labTrace.sourceUrls, [ragSource.url]);
@@ -394,3 +440,56 @@ for (const scenario of [
       }
     },
   );
+
+test(
+  "real SDK cancellation closes a stalled transport without format repair",
+  { timeout: 15000 },
+  async () => {
+    let reached;
+    const started = new Promise((resolve) => {
+      reached = resolve;
+    });
+    const server = createServer((req) => {
+      req.resume();
+      reached();
+    });
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const dir = await mkdtemp(join(tmpdir(), "earth-dsh-abort-"));
+    const abort = new AbortController();
+    let attempts = 0;
+    try {
+      const cfg = config({
+        DATABASE_URL: "unused",
+        REDIS_URL: "unused",
+        DATA_DIR: dir,
+        DEEPSEEK_API_KEY: "fixture-only",
+        DEEPSEEK_BASE_URL: `http://127.0.0.1:${server.address().port}/anthropic`,
+        DSH_TIMEOUT_MS: 10000,
+      });
+      const pending = new DshAgent(cfg, {
+        onAttempt: () => {
+          attempts++;
+        },
+      }).run(
+        { id: randomUUID(), user_id: randomUUID(), kind: "review", input: {} },
+        { messages: [], goals: [], standards: [] },
+        abort.signal,
+      );
+      await started;
+      abort.abort(new Error("PRIVATE_ABORT_REASON"));
+      await assert.rejects(
+        pending,
+        (error) =>
+          error.failure.code === "job_interrupted" &&
+          error.failure.harness.attempts === 1 &&
+          !JSON.stringify(error.failure).includes("PRIVATE"),
+      );
+      assert.equal(attempts, 1);
+    } finally {
+      abort.abort();
+      server.closeAllConnections();
+      await new Promise((resolve) => server.close(resolve));
+      await rm(dir, { recursive: true, force: true });
+    }
+  },
+);

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { inputSchema, parseGeneration } from "./contract.js";
 import { fixture, exampleInput } from "./fixtures.js";
+import { AgentError } from "./current/src/agent-output.js";
 import { DshAgent } from "./current/src/agent.js";
 import { initialState, applyCommand, settleJob } from "./current/src/domain.js";
 import { config } from "./current/src/config.js";
@@ -81,6 +82,9 @@ export async function generate(
           sources: [],
           untrusted: true,
         };
+  cfg.DSH_TIMEOUT_MS = Math.max(0, cfg.DSH_TIMEOUT_MS - (Date.now() - start));
+  if (input.mode === "live" && !cfg.DSH_TIMEOUT_MS)
+    throw new AgentError("model_timeout", { phase: "retrieval" });
   let result;
   if (input.engine === "skills") {
     const job = {

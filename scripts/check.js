@@ -17,6 +17,7 @@ for (const d of ["src", "dsh", "scripts", "test", "packages/planning-rag"])
 for (const p of [
   "public/app.js",
   "public/mobile.js",
+  "public/planning-copy.js",
   "public/character.js",
   "public/api-client.js",
 ]) {

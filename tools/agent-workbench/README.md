@@ -2,7 +2,6 @@
 
 图标库：`/icon-library.html` 可搜索 87 个语义图标。`public/skill-icons.js` 是 Agent 枚举和前端渲染的共同来源；新增图标后运行 `node export-contracts.js`。新增内容沿用本地 Lucide，不访问第三方 CDN。历史节点继续使用原图标，新的生成可以选择更具体的图标。
 
-
 ## 长期技能节点规则（2026-10-08 修订）
 
 新增节点仅允许 domain/ability，milestone 固定为 null，单轮最多 8 个，允许零新增。目标、考试分数、阶段和任务步骤留在目标/任务系统。英语采用“语言 → 英语 → 听说读写”，健身采用“体能 → 力量/耐力”，不强制相同层数。多个目标共享能力节点；节点详情显示关联目标。普通任务不触发细分，只有明确的长期专精需求才扩展。
@@ -67,7 +66,7 @@ npm run knowledge -- status
 npm run knowledge -- search '我想学习英语，怎么安排复习和练习'
 ```
 
-CLI 固定使用 `--backend=file --namespace=workbench`，索引保存在本目录的 `var/knowledge/workbench.json`。`seed` 导入 8 条原创规划参考；首次下载公开中文模型到本目录的 `var/models/`，以后从本地缓存加载，无需额外 embedding API 密钥。空库首次规划可自动导入内置参考；提前运行 `seed` 可避免第一条请求等待模型下载。
+CLI 固定使用 `--backend=file --namespace=workbench`，索引保存在本目录的 `var/knowledge/workbench.json`。`seed` 导入 28 条带 56 个原创情景案例的规划参考；首次下载公开中文模型到本目录的 `var/models/`，以后从本地缓存加载，无需额外 embedding API 密钥。空库首次规划可自动导入内置参考；提前运行 `seed` 可避免第一条请求等待模型下载。
 
 可导入自己的 UTF-8 Markdown、纯文本或 JSON，JSON 支持单个文档或文档数组：
 
@@ -97,10 +96,10 @@ npm run knowledge -- import /完整路径/参考资料.json
 
 使用 DSH SDK `0.2.0-rc.2`，每次尝试创建隔离的 Agent 临时目录和会话；应用负责保存并压缩跨轮上下文，不依靠 DSH 自动保存整段聊天。
 
-| 开关 | 实际作用 |
-| --- | --- |
+| 开关          | 实际作用                                                                        |
+| ------------- | ------------------------------------------------------------------------------- |
 | `earth-tools` | 挂载 `earth_context`、`earth_standards`、`earth_search`、只读 `earth_knowledge` |
-| `skills` | 挂载 DSH skill、filesystem、tool-skill 组件，只复制所选技能到本轮目录 |
+| `skills`      | 挂载 DSH skill、filesystem、tool-skill 组件，只复制所选技能到本轮目录           |
 
 业务技能位于 `skills/`：`goal-intake`（目标澄清）、`skill-tree-design`（能力树）、`task-design`（详细任务）、`plan-adjustment`（反馈调整）。界面开关是本轮挂载/卸载，不是 npm 包下载、安装或删除。外部 MCP 服务及 DSH 等待式提问组件未接入；多轮询问通过工作台聊天完成。
 
@@ -110,12 +109,12 @@ npm run knowledge -- import /完整路径/参考资料.json
 
 当前链路：Agent JSON → 严格结构校验 → 引用/图/预算等语义校验 → 对话上下文校验 → 展示。不是从回复文案中猜测任务。
 
-| 文件 / 版本 | 用途 |
-| --- | --- |
-| `agent-response.schema.json` / `earth.agent.v2` | `clarify`、`draft`、`reply`，回复、选项问题、已知/未知信息、可选 plan |
-| `plan.schema.json` / `earth.plan.v2` | 目标、假设、核心技能、目标节点、策略、资源与任务的完整快照 |
-| `skill-node.schema.json` | 节点 ID、名称、简介、图标、类型、父节点、前置条件、里程碑与 baseline |
-| `task.schema.json` | 关联技能、目的、分钟数、资源、详细 actions、材料就绪状态及缺失材料问题 |
+| 文件 / 版本                                     | 用途                                                                   |
+| ----------------------------------------------- | ---------------------------------------------------------------------- |
+| `agent-response.schema.json` / `earth.agent.v2` | `clarify`、`draft`、`reply`，回复、选项问题、已知/未知信息、可选 plan  |
+| `plan.schema.json` / `earth.plan.v2`            | 目标、假设、核心技能、目标节点、策略、资源与任务的完整快照             |
+| `skill-node.schema.json`                        | 节点 ID、名称、简介、图标、类型、父节点、前置条件、里程碑与 baseline   |
+| `task.schema.json`                              | 关联技能、目的、分钟数、资源、详细 actions、材料就绪状态及缺失材料问题 |
 
 节点 `parentId` 控制展示层级，`prerequisites` 表示学习依赖，两者分别检查。`kind` 支持 core/domain/ability/milestone。`baseline.status` 为 lit/unlit；点亮必须基于用户原话引用及 self_report，未知保持未点亮，**不代表通过能力认证**。
 
@@ -129,15 +128,15 @@ npm run knowledge -- import /完整路径/参考资料.json
 
 ## API 与代码导航
 
-| API | 用途 |
-| --- | --- |
-| `GET /api/status` | 模型/检索配置状态、busy、本进程请求 token |
-| `GET /api/capabilities` | 可挂载的插件与技能 |
-| `GET /api/workbench/contracts` | 当前请求、响应、节点、任务与计划 Schema |
-| `GET /api/conversations`、`GET /api/conversations/:id` | 对话列表、详情 |
-| `POST /api/messages` | 提交 `{message, conversationId?, turnType?, capabilities:{plugins,skills}}`，返回 job ID |
-| `GET /api/jobs/:id` | 运行进度、重试或最终结果 |
-| `POST /api/workbench/validate` | 校验原始响应 JSON |
+| API                                                    | 用途                                                                                     |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| `GET /api/status`                                      | 模型/检索配置状态、busy、本进程请求 token                                                |
+| `GET /api/capabilities`                                | 可挂载的插件与技能                                                                       |
+| `GET /api/workbench/contracts`                         | 当前请求、响应、节点、任务与计划 Schema                                                  |
+| `GET /api/conversations`、`GET /api/conversations/:id` | 对话列表、详情                                                                           |
+| `POST /api/messages`                                   | 提交 `{message, conversationId?, turnType?, capabilities:{plugins,skills}}`，返回 job ID |
+| `GET /api/jobs/:id`                                    | 运行进度、重试或最终结果                                                                 |
+| `POST /api/workbench/validate`                         | 校验原始响应 JSON                                                                        |
 
 POST 要求 `X-Lab-Token`，取自本机 status 接口，不要将 token 放进共享日志。`turnType` 默认为 message，额外背景用 background。旧 `/api/contracts`、`POST /api/jobs`、`POST /api/validate` 服务于 v1/现有路线对比实验。
 
@@ -170,6 +169,5 @@ node export-contracts.js
 停止本地进程用 Ctrl+C；服务器现有实例用 `systemctl stop earth-generation-lab-20261007.service`，随后关闭对应 SSH 转发。需要保留结果及导入资料时先备份独立目录的 `var/workbench/` 和 `var/knowledge/`。
 
 确认停止且已备份后，可删除工作台独立目录。不要删除复用的生产 Node、node_modules 或环境文件。要从仓库移除，删除 `tools/agent-workbench/`、`.github/workflows/agent-workbench.yml` 和根 README 的工作台章节即可；正式数据库无需迁移或回滚。若只想保留解析能力，可单独迁移协议和校验代码后再移除界面。
-
 
 技能树解析合并器已提升到 `src/skill-tree`，工作台的 tree-patch.js 仅转出共享模块。正式站使用同一校验和合并逻辑，工作台仍不写正式账号数据库；移除 tools/agent-workbench 不影响正式技能树。工作台运行时须保留仓库中的共享 src/skill-tree 与 public/skill-tree 目录。

@@ -8,6 +8,15 @@ import {
   DIMENSIONS,
 } from "./embedding.js";
 import { FileStore, PgStore } from "./stores.js";
+import {
+  buildQueryPlan,
+  CANDIDATE_LIMIT,
+  MIN_SEMANTIC_SCORE,
+  fuseCandidates,
+  diverseCandidates,
+  matchedExcerpt,
+  rankLexicalCandidates,
+} from "./retrieval.js";
 export { DEFAULT_MODEL, DIMENSIONS };
 
 const id = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/);
@@ -172,12 +181,22 @@ export function createKnowledge(options = {}) {
     },
     async retrieve(
       query,
-      { userId = null, topK = 6, maxChars = 7200, signal } = {},
+      {
+        userId = null,
+        topK = 6,
+        maxChars = 7200,
+        signal,
+        queryVariants = [],
+      } = {},
     ) {
       query = z.string().trim().min(1).max(500).parse(query);
       owner.parse(userId);
       topK = z.number().int().min(1).max(8).parse(topK);
       maxChars = z.number().int().min(100).max(10000).parse(maxChars);
+      queryVariants = z
+        .array(z.string().trim().min(1).max(500))
+        .max(2)
+        .parse(queryVariants);
       signal?.throwIfAborted();
       try {
         let status = await service.status({ userId });
@@ -195,15 +214,35 @@ export function createKnowledge(options = {}) {
             chunks: [],
             sources: [],
           };
-        const vector = await embedding.embed(query, { query: true });
-        if (!validVector(vector))
-          throw new Error("knowledge_embedding_invalid");
+        const plan = buildQueryPlan(query, queryVariants);
+        const [semanticResult, lexicalResult] = await Promise.allSettled([
+          (async () => {
+            const vector = await embedding.embed(query, { query: true });
+            if (!validVector(vector))
+              throw new Error("knowledge_embedding_invalid");
+            signal?.throwIfAborted();
+            return store.search(vector, userId, modelKey, CANDIDATE_LIMIT);
+          })(),
+          store.searchLexical
+            ? store.searchLexical(plan, userId, modelKey, CANDIDATE_LIMIT)
+            : Promise.resolve(null),
+        ]);
         signal?.throwIfAborted();
-        const candidates = await store.search(
-          vector,
-          userId,
-          modelKey,
-          Math.min(topK * 3, 24),
+        const semantic =
+          semanticResult.status === "fulfilled" ? semanticResult.value : [];
+        const lexical =
+          lexicalResult.status === "fulfilled" && lexicalResult.value !== null
+            ? lexicalResult.value
+            : rankLexicalCandidates(semantic, plan);
+        if (
+          semanticResult.status === "rejected" &&
+          lexicalResult.status === "rejected"
+        )
+          throw new Error("knowledge_candidates_unavailable");
+        if (semanticResult.status === "rejected" && !lexical.length)
+          throw new Error("knowledge_embedding_unavailable");
+        const candidates = diverseCandidates(
+          fuseCandidates(semantic, lexical, plan),
         );
         const chunks = [],
           perDoc = new Map();
@@ -212,8 +251,8 @@ export function createKnowledge(options = {}) {
         for (const candidate of candidates) {
           if ((perDoc.get(candidate.documentId) ?? 0) >= 2) continue;
           const remaining = maxChars - characters;
-          if (remaining < 100 || chunks.length >= topK) break;
-          const text = candidate.text.slice(0, Math.min(400, remaining));
+          if (remaining < 1 || chunks.length >= topK) break;
+          const text = matchedExcerpt(candidate, Math.min(400, remaining));
           if (!text) continue;
           const url = sourceUrl({
             id: candidate.documentId,
@@ -226,7 +265,12 @@ export function createKnowledge(options = {}) {
             title: candidate.title,
             url,
             text,
-            score: Number(candidate.score),
+            // Preserve cosine score for consumers; fusionScore controls hybrid ranking.
+            score: candidate.semanticScore ?? 0,
+            fusionScore: candidate.fusionScore,
+            lexicalScore: candidate.lexical.score,
+            matchedBy: candidate.matchedBy,
+            matchedTerms: candidate.lexical.matchedTerms,
             retrievedAt,
           });
           perDoc.set(
@@ -257,6 +301,18 @@ export function createKnowledge(options = {}) {
           model: options.model ?? DEFAULT_MODEL,
           chunks,
           sources,
+          ...(chunks.length ? {} : { reason: "no_matches" }),
+          retrieval: {
+            method: "hybrid-rrf",
+            semanticAvailable: semanticResult.status === "fulfilled",
+            lexicalAvailable:
+              lexicalResult.status === "fulfilled" &&
+              lexicalResult.value !== null,
+            semanticCandidates: semantic.length,
+            lexicalCandidates: lexical.length,
+            queryVariants: queryVariants.length,
+            minSemanticScore: MIN_SEMANTIC_SCORE,
+          },
           index: {
             name: namespace,
             documentCount: status.documents,

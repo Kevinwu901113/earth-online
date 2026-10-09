@@ -168,16 +168,24 @@ export async function runMessage(
   const context = compactContext(c);
   // Legacy snapshots remain untouched; a personal tree starts only on v3 output.
   const baseTree = c.tree ?? initialTree();
-  context.personalTree = {revision:baseTree.revision,nodes:baseTree.nodes,goals:baseTree.goals};
+  context.personalTree = {
+    revision: baseTree.revision,
+    nodes: baseTree.nodes,
+    goals: baseTree.goals,
+  };
   context.treeRequestId = runId;
   context.resourceCatalog = resourceCatalog;
   context.searchAvailable =
     !!baseCfg.EXA_API_KEY && c.capabilities.plugins.includes("earth-tools");
-  context.explicitBatchBudget = explicitBudget(c.messages.slice(context.intake.startIndex));
+  context.explicitBatchBudget = explicitBudget(
+    c.messages.slice(context.intake.startIndex),
+  );
   const start = Date.now();
   let output;
   let merged;
   const attempts = [];
+  let generations = 0;
+  const deadline = start + baseCfg.DSH_TIMEOUT_MS;
   async function progress(status, attempt, error) {
     c.lastRun = {
       id: runId,
@@ -192,9 +200,16 @@ export async function runMessage(
     await onProgress(c.lastRun);
   }
   await progress("running", 1);
-  const query = [c.messages[context.intake.startIndex]?.content, job.input.message]
-    .filter(Boolean)
-    .join("\n");
+  const query = context.intent.shouldRetrieve
+    ? [
+        c.messages[context.intake.startIndex]?.content,
+        ...context.userStatements.slice(-3),
+        job.input.message,
+      ]
+        .filter(Boolean)
+        .join("\n")
+        .slice(0, 500)
+    : "";
   context.knowledge = await retrieveLabKnowledge(
     c.capabilities.plugins.includes("earth-tools")
       ? (knowledge ?? (!agent ? getLabKnowledge(env) : null))
@@ -207,17 +222,26 @@ export async function runMessage(
     await progress("running", attempt);
     const at = Date.now();
     try {
+      if (Date.now() >= deadline || generations >= 3)
+        throw new ContractError("model_timeout");
+      if (agent) generations++;
       const cfg = {
         ...baseCfg,
+        DSH_TIMEOUT_MS: Math.max(1, deadline - Date.now()),
         DSH_REASONING_EFFORT:
           attempt === 1 ? baseCfg.DSH_REASONING_EFFORT : "low",
       };
       output = checkBudget(
         parseResponse(
-          await (agent || new DshAgent(cfg)).run(
-            { ...job, id: randomUUID() },
-            context,
-          ),
+          await (
+            agent ||
+            new DshAgent(cfg, {
+              maxAttempts: Math.max(1, 3 - generations),
+              onAttempt: () => {
+                generations++;
+              },
+            })
+          ).run({ ...job, id: randomUUID() }, context),
         ),
         context.explicitBatchBudget,
       );
@@ -225,12 +249,14 @@ export async function runMessage(
         ...resourceCatalog.map((r) => r.url),
         ...(trace.sourceUrls ?? []),
       ]);
-      enforceIntake(output, context.intake);
+      enforceIntake(output, context.intake, context.intent);
       verifyBaselines(output, c);
-      if (output.schemaVersion === 'earth.agent.v3' && output.plan) {
+      if (output.schemaVersion === "earth.agent.v3" && output.plan) {
         merged = applyTreePatch(baseTree, output.treePatch, output.plan, {
           requestId: runId,
-          userStatements: c.messages.filter(m=>m.role==='user'&&!isRetry(m.content)).map(m=>m.content),
+          userStatements: c.messages
+            .filter((m) => m.role === "user" && !isRetry(m.content))
+            .map((m) => m.content),
         });
       }
       attempts.push({
@@ -247,7 +273,12 @@ export async function runMessage(
         elapsedMs: Date.now() - at,
         error,
       });
-      if (attempt === 3 || !recoverable.has(error.code)) {
+      if (
+        attempt === 3 ||
+        generations >= 3 ||
+        Date.now() >= deadline ||
+        !recoverable.has(error.code)
+      ) {
         await progress("failed", attempt, error);
         throw e;
       }
@@ -256,8 +287,18 @@ export async function runMessage(
         instruction:
           "自动恢复：使用原始用户输入重新输出合法响应。缩短非必要解释，严格遵守收集轮次和输出契约。",
         ...error,
-        ...(output?.plan ? { taskDurations: output.plan.tasks.map(t => ({id:t.id, minutes:t.minutes, actionMinutes:t.actions.map(a=>a.minutes), actionTotal:t.actions.reduce((sum,a)=>sum+a.minutes,0)})) } : {}),
-        repairHint: "duration_mismatch 表示该任务的 minutes 必须等于所有 actions.minutes 的算术总和；同时所有任务合计不能超过 goal.minutes。重新分配步骤时间后再计算总和，不要重复错误数字。",
+        ...(output?.plan
+          ? {
+              taskDurations: output.plan.tasks.map((t) => ({
+                id: t.id,
+                minutes: t.minutes,
+                actionMinutes: t.actions.map((a) => a.minutes),
+                actionTotal: t.actions.reduce((sum, a) => sum + a.minutes, 0),
+              })),
+            }
+          : {}),
+        repairHint:
+          "duration_mismatch 表示该任务的 minutes 必须等于所有 actions.minutes 的算术总和；同时所有任务合计不能超过 goal.minutes。重新分配步骤时间后再计算总和，不要重复错误数字。",
       };
     }
   }
@@ -268,14 +309,26 @@ export async function runMessage(
   }
   c.intake = {
     ...context.intake,
-    processedThrough: c.messages.findLastIndex(m=>m.role==='user'&&!isRetry(m.content)),
+    processedThrough: c.messages.findLastIndex(
+      (m) => m.role === "user" && !isRetry(m.content),
+    ),
     finalized:
       context.intake.mustPlan ||
+      context.intake.finalized ||
       (output.status === "draft" && output.questions.length === 0),
   };
   const result = {
     ...output,
-    ...(merged ? {plan:merged.plan,agentPlan:output.plan,treePatch:output.treePatch,treeRevision:merged.tree.revision,tree:merged.tree.nodes,goals:merged.tree.goals} : {}),
+    ...(merged
+      ? {
+          plan: merged.plan,
+          agentPlan: output.plan,
+          treePatch: output.treePatch,
+          treeRevision: merged.tree.revision,
+          tree: merged.tree.nodes,
+          goals: merged.tree.goals,
+        }
+      : {}),
     retrieval: retrievalSummary(context.knowledge),
     intake: c.intake,
     revision: c.revision,
