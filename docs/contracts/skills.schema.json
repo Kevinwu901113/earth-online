@@ -246,6 +246,98 @@
                   }
                 ]
               },
+              "deliverable": {
+                "description": "完成这项任务时用户交付什么。text=一段可粘贴的文字成果（提纲、草稿、逐字稿）；log=一张简短记录表（数字或短文字字段，如次数、用时）；confirm=生活小事，点完成即可。null=按行动清单完成。只能选用户能用文字提交的成果，不能要求录音、照片或文件。",
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "confirm",
+                          "text",
+                          "log"
+                        ]
+                      },
+                      "prompt": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 300
+                      },
+                      "name": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 60
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "fields": {
+                        "maxItems": 4,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "type": "string",
+                              "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+                            },
+                            "label": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 60
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "number",
+                                "text"
+                              ]
+                            },
+                            "unit": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 12
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "required": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "key",
+                            "label",
+                            "kind",
+                            "unit",
+                            "required"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "prompt",
+                      "name",
+                      "fields"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "actions": {
                 "minItems": 1,
                 "maxItems": 8,

@@ -2,6 +2,12 @@ import { initialTree, applyTreePatch } from "./skill-tree/tree-patch.js";
 import { skillGoalId } from "./skill-tree/generation.js";
 import { randomUUID } from "node:crypto";
 import { validateOutput } from "./agent-output.js";
+import {
+  syncQuests,
+  deliveryBlocker,
+  creditSkills,
+  lootFrom,
+} from "./quests.js";
 export class DomainError extends Error {
   constructor(message, status = 409) {
     super(message);
@@ -34,8 +40,37 @@ export const initialState = () => ({
   achievements: [],
   personalTree: initialTree(),
   skillPlans: {},
+  quests: [],
+  loot: [],
+  skillProgress: {},
+  trackedQuestId: null,
   levelXp: 0,
 });
+const todayIn = (s, now) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: s.profile.timezone }).format(
+    new Date(now),
+  );
+// growth-v1: every effort record shares the same per-action and daily caps.
+const effortGain = (s, day, minutes, completion = "done") => {
+  if (completion === "rest") return 0;
+  const total = s.records
+    .filter((r) => r.day === day)
+    .reduce((a, r) => a + r.gain, 0);
+  return Math.max(
+    0,
+    Math.min(
+      rules.maxActionXp,
+      Math.floor(minutes / rules.minutesPerXp),
+      rules.dailyXpCap - total,
+    ),
+  );
+};
+const findQuest = (s, id) => {
+  const q = s.quests.find((q) => q.id === id);
+  if (!q) throw new DomainError("任务已被新的规划替换，请刷新");
+  const g = findGoal(s, q.goal);
+  return { q, g };
+};
 const find = (list, id) => {
   const x = list.find((i) => i.id === id);
   if (!x) throw new DomainError("记录不存在", 404);
@@ -358,6 +393,14 @@ export function applyCommand(
           )
         )
           throw new DomainError("今天已经记录过这项任务");
+        // Plan tasks are quests now: completing them goes through quest.deliver only,
+        // so a stale client cannot credit the same task twice.
+        if (
+          s.quests.some(
+            (q) => q.goal === cmd.goal && q.taskId === cmd.skillTaskId,
+          )
+        )
+          throw new DomainError("这项任务已变为主线任务，请在任务详情中交付");
       }
       const p = cmd.plan ? find(s.plans, cmd.plan) : null;
       const g = cmd.goal ? findGoal(s, cmd.goal) : null;
@@ -376,25 +419,9 @@ export function applyCommand(
       if (g && p && (p.stage !== g.stage || p.revision !== g.revision))
         throw new DomainError("路线已变化，请重新安排当前阶段");
       if (p && cmd.minutes > 1440) throw new DomainError("投入时长无效");
-      const dayNow = new Intl.DateTimeFormat("en-CA", {
-        timeZone: s.profile.timezone,
-      }).format(new Date(now));
-      if (cmd.day > dayNow)
+      if (cmd.day > todayIn(s, now))
         throw new DomainError("不能记录尚未发生的行动", 400);
-      const total = s.records
-        .filter((r) => r.day === cmd.day)
-        .reduce((a, r) => a + r.gain, 0);
-      const gain =
-        cmd.completion === "rest"
-          ? 0
-          : Math.max(
-              0,
-              Math.min(
-                rules.maxActionXp,
-                Math.floor(cmd.minutes / rules.minutesPerXp),
-                rules.dailyXpCap - total,
-              ),
-            );
+      const gain = effortGain(s, cmd.day, cmd.minutes, cmd.completion);
       const r = {
         ...cmd,
         id: randomUUID(),
@@ -568,6 +595,117 @@ export function applyCommand(
         createdAt: now,
       });
       break;
+    case "quest.accept": {
+      const { q, g } = findQuest(s, cmd.id);
+      active(g);
+      if (q.status === "accepted") throw new DomainError("任务已接取");
+      if (q.status !== "available")
+        throw new DomainError(
+          q.status === "locked"
+            ? "完成前一个任务后才能接取"
+            : "任务当前不可接取",
+        );
+      q.status = "accepted";
+      q.acceptedAt = now;
+      s.trackedQuestId ??= q.id;
+      result = { questId: q.id };
+      break;
+    }
+    case "quest.abandon": {
+      const { q } = findQuest(s, cmd.id);
+      if (q.status !== "accepted") throw new DomainError("任务未接取");
+      // Objective progress is kept so re-accepting resumes where the user stopped.
+      q.status = "available";
+      q.acceptedAt = null;
+      if (s.trackedQuestId === q.id) s.trackedQuestId = null;
+      result = { questId: q.id };
+      break;
+    }
+    case "quest.track": {
+      const { q } = findQuest(s, cmd.id);
+      if (q.status !== "accepted") throw new DomainError("请先接取任务");
+      s.trackedQuestId = q.id;
+      result = { questId: q.id };
+      break;
+    }
+    case "quest.objective": {
+      const { q, g } = findQuest(s, cmd.id);
+      active(g);
+      if (q.status !== "accepted") throw new DomainError("请先接取任务");
+      if (!q.objectives.some((o) => o.id === cmd.objective))
+        throw new DomainError("目标项不存在", 404);
+      q.progress = { ...q.progress, [cmd.objective]: cmd.done };
+      result = { questId: q.id };
+      break;
+    }
+    case "quest.deliver": {
+      const { q, g } = findQuest(s, cmd.id);
+      active(g);
+      if (q.status === "delivered") throw new DomainError("任务已交付");
+      if (q.status !== "accepted") throw new DomainError("请先接取任务");
+      // Deliveries are dated today so they cannot use an earlier day's unused cap.
+      if (cmd.day !== todayIn(s, now))
+        throw new DomainError("交付日期需为今天，请刷新后重试", 400);
+      const blocker = deliveryBlocker(q, cmd);
+      if (blocker) throw new DomainError(blocker, 400);
+      const gain = effortGain(s, cmd.day, cmd.minutes);
+      const r = {
+        id: randomUUID(),
+        plan: null,
+        goal: g.id,
+        questId: q.id,
+        skillTaskId: q.taskId,
+        name: q.title,
+        minutes: cmd.minutes,
+        day: cmd.day,
+        stat: q.stat,
+        note: cmd.note,
+        completion: "done",
+        gain,
+        source: "任务交付",
+        status: "done",
+        createdAt: now,
+      };
+      s.records.push(r);
+      s.levelXp += gain;
+      rewards.push({
+        id: randomUUID(),
+        sourceId: r.id,
+        kind: "effort",
+        xp: gain,
+        attribute: q.stat,
+        ruleVersion: rules.version,
+      });
+      const skillGains = creditSkills(s, q, cmd.minutes);
+      const loot = lootFrom(q, cmd, now, randomUUID());
+      if (loot) s.loot.push(loot);
+      q.status = "delivered";
+      q.deliveredAt = now;
+      q.recordId = r.id;
+      q.lootId = loot?.id ?? null;
+      if (s.trackedQuestId === q.id)
+        s.trackedQuestId =
+          s.quests.find((x) => x.status === "accepted")?.id ?? null;
+      syncQuests(s);
+      const next = s.quests
+        .filter(
+          (x) =>
+            x.goal === q.goal &&
+            x.planKey === q.planKey &&
+            x.order > q.order &&
+            x.status === "available",
+        )
+        .sort((a, b) => a.order - b.order)[0];
+      result = {
+        questId: q.id,
+        recordId: r.id,
+        gain,
+        skillGains,
+        lootId: loot?.id ?? null,
+        unlocked: next?.id ?? null,
+      };
+      break;
+    }
     default:
       throw new DomainError("不支持的操作", 400);
   }
@@ -612,6 +750,7 @@ export function settleJob(
     s.personalTree = merged.tree;
     s.skillPlans ??= {};
     s.skillPlans[g.id] = { ...output.plan, updatedAt: now };
+    syncQuests(s);
     result = { treeRevision: merged.tree.revision, goalId: g.id };
   } else if (job.kind === "route") {
     const g = findGoal(s, job.input.goalId);
@@ -734,5 +873,6 @@ export function expireState(state, now = new Date().toISOString()) {
       (e.status === "claimed" && e.executeBy <= now)
     )
       e.status = "expired";
-  return s;
+  // Quests derive from skill plans; syncing here keeps reads and writes consistent.
+  return syncQuests(s);
 }

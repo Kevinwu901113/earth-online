@@ -61,6 +61,26 @@ export const resourceSchemaV2 = z
     question: z.string().max(500).nullable(),
   })
   .strict();
+export const deliverableSchema = z
+  .object({
+    type: z.enum(["confirm", "text", "log"]),
+    prompt: text(300),
+    name: text(60).nullable(),
+    fields: z
+      .array(
+        z
+          .object({
+            key: id,
+            label: text(60),
+            kind: z.enum(["number", "text"]),
+            unit: z.string().trim().max(12).nullable(),
+            required: z.boolean(),
+          })
+          .strict(),
+      )
+      .max(4),
+  })
+  .strict();
 export const taskSchemaV2 = z
   .object({
     id,
@@ -72,6 +92,12 @@ export const taskSchemaV2 = z
     resourceIds: z.array(id).max(6),
     readiness: z.enum(["ready", "needs_material"]),
     materialQuestion: z.string().max(500).nullable(),
+    deliverable: deliverableSchema
+      .nullable()
+      .optional()
+      .describe(
+        "完成这项任务时用户交付什么。text=一段可粘贴的文字成果（提纲、草稿、逐字稿）；log=一张简短记录表（数字或短文字字段，如次数、用时）；confirm=生活小事，点完成即可。null=按行动清单完成。只能选用户能用文字提交的成果，不能要求录音、照片或文件。",
+      ),
     actions: z
       .array(
         z
@@ -204,6 +230,15 @@ export function parsePlanV2(
       issue(["tasks", t.id], "duration_mismatch");
     if (t.readiness === "needs_material" && !t.materialQuestion?.trim())
       issue(["tasks", t.id], "material_question_required");
+    const d = t.deliverable;
+    if (d) {
+      if (d.type === "log" && !d.fields.length)
+        issue(["tasks", t.id, "deliverable"], "log_fields_required");
+      if (d.type !== "log" && d.fields.length)
+        issue(["tasks", t.id, "deliverable"], "fields_only_for_log");
+      if (new Set(d.fields.map((f) => f.key)).size !== d.fields.length)
+        issue(["tasks", t.id, "deliverable"], "duplicate_field");
+    }
     if (
       t.readiness === "ready" &&
       t.resourceIds.some(

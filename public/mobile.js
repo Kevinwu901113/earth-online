@@ -36,6 +36,10 @@ let state,
   modalOpen = false,
   focusBefore,
   authMode = "login";
+let questId,
+  settle = null;
+// Unsent delivery input survives the 3.5s refresh and objective toggles.
+const drafts = new Map();
 let intake = { start: null, goalId: null, draft: "", error: "" },
   sending = false,
   confirming = false,
@@ -79,6 +83,233 @@ function toast(text) {
   $(".eg-toast").textContent = text;
   $(".eg-toast").hidden = false;
   toastTimer = setTimeout(() => ($(".eg-toast").hidden = true), 3500);
+}
+const deliveryLabel = {
+  text: "文字成果",
+  log: "简短记录",
+  confirm: "确认完成",
+  checklist: "按清单完成",
+};
+const questStatusLabel = {
+  locked: "未解锁",
+  available: "可接取",
+  accepted: "进行中",
+  delivered: "已交付",
+};
+function quests() {
+  const live = new Set(goals().map((g) => g.id));
+  return (state.quests || []).filter(
+    (q) => live.has(q.goal) && q.status !== "retired",
+  );
+}
+const questOf = (id) => quests().find((q) => q.id === id);
+const goalQuests = (gid) =>
+  quests()
+    .filter((q) => q.goal === gid)
+    .sort((a, b) => a.order - b.order);
+const doneCount = (q) => q.objectives.filter((o) => q.progress?.[o.id]).length;
+const skillNode = (id) => state.personalTree?.nodes.find((n) => n.id === id);
+const todayGain = () =>
+  state.records.filter((r) => r.day === day()).reduce((a, r) => a + r.gain, 0);
+const previewXp = (m) =>
+  Math.max(
+    0,
+    Math.min(
+      rules.maxActionXp,
+      Math.floor(m / rules.minutesPerXp),
+      rules.dailyXpCap - todayGain(),
+    ),
+  );
+function draftOf(q) {
+  if (!drafts.has(q.id))
+    drafts.set(q.id, { minutes: q.minutes, content: "", note: "", fields: {} });
+  return drafts.get(q.id);
+}
+// Mirrors the server rule so the button explains what is missing; the server decides.
+function blockerOf(q, d) {
+  const left = q.objectives.length - doneCount(q);
+  if (left > 0) return `还差 ${left} 个目标项`;
+  if (q.delivery.type === "text" && !d.content.trim())
+    return "填写成果后即可交付";
+  if (q.delivery.type === "log")
+    for (const f of q.delivery.fields) {
+      const v = String(d.fields[f.key] ?? "").trim();
+      if (f.required && !v) return `填写「${f.label}」后即可交付`;
+      if (v && f.kind === "number" && !Number.isFinite(Number(v)))
+        return `「${f.label}」需要填写数字`;
+    }
+  return "";
+}
+function trackedQuest() {
+  const qs = quests();
+  // Paused goals keep their quests on the board but out of the tracker.
+  const live = (q) => goals().find((g) => g.id === q.goal)?.status === "active";
+  const tracked = questOf(state.trackedQuestId);
+  return (
+    (tracked && live(tracked) ? tracked : null) ||
+    qs.find((q) => q.status === "accepted" && live(q)) ||
+    qs.find((q) => q.status === "available" && live(q))
+  );
+}
+function questBar(q) {
+  const total = q.objectives.length;
+  if (!total) return "";
+  const n = doneCount(q);
+  return `<div class="q-progress" role="img" aria-label="目标项 ${n} / ${total}"><span>任务进度</span><span class="q-bar"><span style="width:${(n / total) * 100}%"></span></span><span>${n} / ${total}</span></div>`;
+}
+function tracker() {
+  const q = trackedQuest();
+  if (!q) return "";
+  const g = goals().find((g) => g.id === q.goal),
+    accepted = q.status === "accepted",
+    next = q.objectives.find((o) => !q.progress?.[o.id]);
+  const label = accepted
+    ? state.trackedQuestId === q.id
+      ? "TRACKING · 正在追踪"
+      : "IN PROGRESS · 进行中"
+    : "NEW QUEST · 可接取";
+  const objectives = accepted
+    ? `<ul class="q-mini">${q.objectives
+        .slice(0, 4)
+        .map(
+          (o) =>
+            `<li class="${q.progress?.[o.id] ? "done" : o === next ? "next" : ""}"><span class="q-box" aria-hidden="true"></span><span>${esc(o.name)}</span><small>${o.minutes} 分钟</small></li>`,
+        )
+        .join("")}</ul>`
+    : `<p class="eg-muted">${esc(planningText(q.purpose))}</p>`;
+  const actions = accepted
+    ? `<button class="q-btn q-btn-main q-cut" data-quest="${esc(q.id)}">${ic("play")}${next ? "继续这一步" : "去交付"}</button>`
+    : `<button class="q-btn q-btn-main q-cut" data-qact="accept" data-id="${esc(q.id)}">${ic("scroll-text")}接取任务</button><button class="q-btn q-cut" data-quest="${esc(q.id)}">查看详情</button>`;
+  return `<section class="q-tracker q-cut" aria-label="正在追踪的任务"><div class="q-tracker-top"><span class="q-px q-gold">${label}</span><small>主线 · ${esc(g?.title)}</small></div><h3 class="q-title">${esc(q.title)}</h3>${objectives}<div class="q-actions">${actions}</div>${questBar(q)}</section>`;
+}
+function questRow(q) {
+  const tracked = state.trackedQuestId === q.id;
+  const chip = tracked
+    ? "追踪中"
+    : q.status === "locked"
+      ? ic("lock") + "未解锁"
+      : q.status === "delivered"
+        ? ic("check") + "已交付"
+        : questStatusLabel[q.status];
+  return `<button class="q-row q-${q.status}${tracked ? " q-tracked" : ""}" data-quest="${esc(q.id)}"><span class="q-row-no q-px">${String(q.order + 1).padStart(2, "0")}</span><span class="q-row-main"><span class="q-row-title">${esc(q.title)}</span><small>${q.minutes} 分钟 · ${deliveryLabel[q.delivery.type]}${q.status === "accepted" && q.objectives.length ? ` · ${doneCount(q)}/${q.objectives.length}` : ""}</small></span><span class="q-chip">${chip}</span></button>`;
+}
+function goalBoard(g) {
+  const qs = goalQuests(g.id),
+    stage = g.stages?.[g.stage],
+    delivered = qs.filter((q) => q.status === "delivered").length,
+    allDone = qs.length && delivered === qs.length;
+  return `<section class="q-goal"><div class="q-goal-head"><span class="eg-symbol">${ic(goalIcon(g))}</span><div style="flex:1;min-width:0"><small class="q-px q-gold">MAIN QUEST · 主线</small><h3>${esc(g.title)}</h3><small>${g.status === "paused" ? "已暂停 · " : ""}${stage ? `第 ${g.stage + 1} 阶段 · ${esc(stage.name)} · ` : ""}${delivered} / ${qs.length} 已交付</small></div><button class="eg-small-action eg-inline" data-goal="${g.id}">${ic("map")}路线</button></div>${qs.map(questRow).join("")}${
+    allDone && stage
+      ? `<a class="q-boss q-cut" href="advanced.html"><span class="q-px">BOSS · 阶段挑战已解锁</span><strong>${esc(stage.name)}</strong><small>${esc(planningText(stage.challenge))}</small><span class="q-boss-go">去提交挑战 ↗</span></a>`
+      : ""
+  }</section>`;
+}
+function questPage(q) {
+  const g = goals().find((g) => g.id === q.goal),
+    d = draftOf(q),
+    accepted = q.status === "accepted",
+    plan = state.skillPlans?.[q.goal],
+    resources = (plan?.resources || []).filter((r) =>
+      q.resourceIds.includes(r.id),
+    ),
+    stored = ["text", "log"].includes(q.delivery.type),
+    next = goalQuests(q.goal).find(
+      (x) => x.order > q.order && x.status !== "delivered",
+    ),
+    blocker = blockerOf(q, d),
+    xp = previewXp(d.minutes);
+  const objectives = q.objectives.length
+    ? `<section class="q-section" aria-label="目标项"><div class="q-section-head"><span class="q-px q-gold">OBJECTIVES</span><small>${doneCount(q)} / ${q.objectives.length}</small></div>${q.objectives
+        .map((o) => {
+          const on = !!q.progress?.[o.id];
+          const body = `<span class="q-box${on ? " on" : ""}" aria-hidden="true"></span><span class="q-obj-main"><span class="q-obj-title">${esc(o.name)}</span>${o.detail ? `<small>${esc(planningText(o.detail))}</small>` : ""}</span><small class="q-obj-min">${o.minutes} 分</small>`;
+          return accepted
+            ? `<button class="q-obj${on ? " done" : ""}" data-qact="objective" data-id="${esc(q.id)}" data-objective="${o.id}" data-done="${!on}" aria-pressed="${on}">${body}</button>`
+            : `<div class="q-obj${on ? " done" : ""}">${body}</div>`;
+        })
+        .join("")}</section>`
+    : "";
+  const fieldsHtml =
+    q.delivery.type === "text"
+      ? `<label for="q-content">${esc(planningText(q.delivery.prompt, "把你的成果贴在这里"))}</label><textarea id="q-content" name="content" rows="6" maxlength="12000" data-draft="content">${esc(d.content)}</textarea>`
+      : q.delivery.type === "log"
+        ? `${q.delivery.prompt ? `<p class="eg-muted">${esc(planningText(q.delivery.prompt))}</p>` : ""}${q.delivery.fields
+            .map(
+              (f) =>
+                `<label for="q-f-${esc(f.key)}">${esc(f.label)}${f.required ? ' <span class="q-req" aria-label="必填">*</span>' : ""}</label><div class="q-field"><input id="q-f-${esc(f.key)}" ${f.kind === "number" ? 'type="number" inputmode="decimal"' : 'type="text" maxlength="200"'} data-field="${esc(f.key)}" value="${esc(d.fields[f.key] ?? "")}">${f.unit ? `<span>${esc(f.unit)}</span>` : ""}</div>`,
+            )
+            .join("")}`
+        : q.delivery.prompt
+          ? `<p class="eg-muted">${esc(planningText(q.delivery.prompt))}</p>`
+          : "";
+  const deliver = accepted
+    ? `<form data-form="deliver" class="q-section q-deliver" aria-label="交付"><div class="q-section-head"><span class="q-px q-gold">DELIVER · 交付</span><span class="q-verify">${stored ? "留存 · 不打分" : "自报"}</span></div>${fieldsHtml}<label for="q-note">想留下的话 · 可选</label><input id="q-note" type="text" maxlength="3000" data-draft="note" value="${esc(d.note)}"><div class="q-minutes"><span id="q-min-label">实际投入</span><div role="group" aria-labelledby="q-min-label"><button type="button" class="q-step q-cut" data-qact="minus" data-id="${esc(q.id)}" aria-label="减少 5 分钟">${ic("minus")}</button><input id="q-min" type="number" min="1" max="1440" data-draft="minutes" value="${d.minutes}" aria-label="实际投入分钟数"><span>分钟</span><button type="button" class="q-step q-cut" data-qact="plus" data-id="${esc(q.id)}" aria-label="增加 5 分钟">${ic("plus")}</button></div></div><div class="q-rewards q-cut"><span class="q-px q-gold">REWARDS · 交付可得</span><div class="q-reward-grid"><div><strong class="q-px" data-preview="xp">+${xp}</strong><small>经验${xp < Math.min(rules.maxActionXp, Math.floor(d.minutes / rules.minutesPerXp)) ? " · 今日上限" : ""}</small></div>${q.skillIds
+        .slice(0, 3)
+        .map(
+          (id) =>
+            `<div><strong class="q-px q-blue" data-preview="skill">+${Math.min(120, Math.floor(d.minutes))}</strong><small>${esc(skillNode(id)?.name || "能力")} 熟练度</small></div>`,
+        )
+        .join(
+          "",
+        )}</div>${stored ? `<p class="q-reward-line">${ic("backpack")}战利品：${esc(q.delivery.name || q.title)}</p>` : ""}${next ? `<p class="q-reward-line">${ic("lock-open")}解锁：${esc(next.title)}</p>` : ""}</div><p class="eg-error" role="alert"></p>${
+        blocker
+          ? `<button class="q-btn q-btn-main q-cut" type="submit" disabled>${esc(blocker)}</button>`
+          : `<button class="q-btn q-btn-main q-cut" type="submit">${ic("check")}${q.delivery.type === "confirm" ? "完成" : "交付任务"}</button>`
+      }</form>`
+    : "";
+  const head2 = `<div class="q-badges"><span class="q-badge q-px">主线</span>${state.trackedQuestId === q.id ? '<span class="q-badge q-outline q-px">追踪中</span>' : ""}<small>${questStatusLabel[q.status]}</small></div><h1 class="q-h1">${esc(q.title)}</h1><p class="q-flavor">${esc(planningText(q.purpose))}</p><div class="eg-task-meta"><span>${ic("clock-3")}约 ${q.minutes} 分钟</span><span>${ic("package")}${deliveryLabel[q.delivery.type]}</span></div><div>${skillTags(q.skillIds)}</div>`;
+  const resourcesHtml = resources
+    .map(
+      (r) =>
+        `<div class="eg-resource"><small class="eg-inline">${ic("box")}用到什么</small><p>${esc(r.name)}</p><p class="eg-muted">${esc(planningText(r.locator))}</p>${r.url && /^https?:\/\//.test(r.url) ? `<a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">打开资源 ↗</a>` : ""}${r.question ? `<p>${esc(planningText(r.question))}</p>` : ""}</div>`,
+    )
+    .join("");
+  const material =
+    q.readiness === "needs_material"
+      ? `<p class="eg-task-tip">${esc(planningText(q.materialQuestion, "开始前，请先准备练习材料。"))}</p>`
+      : "";
+  const bottom =
+    q.status === "available"
+      ? g?.status === "active"
+        ? `<button class="q-btn q-btn-main q-cut" data-qact="accept" data-id="${esc(q.id)}">${ic("scroll-text")}接取任务</button>`
+        : '<p class="eg-task-tip">主线暂停中，恢复后可以接取。</p>'
+      : q.status === "locked"
+        ? `<p class="q-locked">${ic("lock")}完成前一个任务后开放</p>`
+        : q.status === "delivered"
+          ? `<p class="eg-task-tip">${ic("badge-check")}已于 ${esc(dateOf(q.deliveredAt))} 交付${q.lootId ? "，成果已放进行囊" : ""}。</p>`
+          : `<div class="q-subactions">${state.trackedQuestId === q.id ? "" : `<button class="eg-back" data-qact="track" data-id="${esc(q.id)}">设为追踪</button>`}<button class="eg-back" data-qact="abandon" data-id="${esc(q.id)}">放弃任务（进度保留，可重新接取）</button></div>`;
+  return (
+    back("tasks", "任务板") +
+    head2 +
+    material +
+    objectives +
+    resourcesHtml +
+    deliver +
+    bottom +
+    (g
+      ? `<button class="eg-back" data-goal="${g.id}">查看这条主线的路线</button>`
+      : "")
+  );
+}
+function settlePage() {
+  const { quest: q, result } = settle,
+    g = goals().find((g) => g.id === q.goal),
+    qs = goalQuests(q.goal),
+    delivered = qs.filter((x) => x.status === "delivered").length,
+    loot = state.loot?.find((l) => l.id === result.lootId),
+    next = questOf(result.unlocked),
+    level = state.levelXp % rules.xpPerLevel,
+    // After a level-up the bar restarts at zero for the new level.
+    before = Math.max(0, level - result.gain),
+    pct = (v) => (v / rules.xpPerLevel) * 100;
+  return `<section class="q-settle"><div class="q-settle-head"><span class="q-px q-gold">QUEST COMPLETE</span><h1>任务完成</h1><p class="eg-muted">主线 · ${esc(q.title)}</p></div><div class="q-card q-cut"><div class="eg-row"><span>经验</span><strong class="q-px q-gold">+${result.gain}</strong></div><div class="q-bar q-bar-lg"><span style="width:${pct(before)}%"></span><span class="q-gain" style="left:${pct(before)}%;width:${pct(level - before)}%"></span></div><div class="eg-row"><small>LV. ${String(1 + Math.floor(state.levelXp / rules.xpPerLevel)).padStart(2, "0")}</small><small>${level} / ${rules.xpPerLevel}</small></div>${result.gain === 0 ? '<small class="eg-muted">今天的经验已达上限，投入仍会计入能力熟练度。</small>' : ""}</div>${result.skillGains
+    .map((s) => {
+      const p = state.skillProgress?.[s.id];
+      return `<div class="q-card q-cut"><div class="eg-row"><span>${ic(skillIcons[skillNode(s.id)?.icon] || "sprout")}${esc(skillNode(s.id)?.name || "能力")}</span><strong class="q-px q-blue">+${s.points}</strong></div><small class="eg-muted">累计投入 ${p?.minutes ?? 0} 分钟 · 完成 ${p?.quests ?? 0} 个任务</small></div>`;
+    })
+    .join(
+      "",
+    )}${loot ? `<div class="q-card q-loot q-cut"><span class="q-loot-icon">${ic("scroll-text")}</span><div><span class="q-px q-gold">NEW LOOT</span><strong>${esc(loot.name)}</strong><small class="eg-muted">已放进行囊</small></div></div>` : ""}<div class="q-card q-cut"><div class="eg-row"><span>${esc(g?.title || "主线")}</span><small>${delivered} / ${qs.length} 已交付</small></div><div class="q-segbar">${qs.map((x) => `<span class="${x.status === "delivered" ? "on" : ""}"></span>`).join("")}</div>${next ? `<p class="q-reward-line">${ic("lock-open")}解锁：<strong>${esc(next.title)}</strong></p>` : delivered === qs.length ? `<p class="q-reward-line">${ic("swords")}本阶段任务全部完成，挑战已解锁</p>` : ""}</div><div class="q-settle-actions">${next ? `<button class="q-btn q-btn-main q-cut" data-quest="${esc(next.id)}">查看下一个任务</button>` : `<button class="q-btn q-btn-main q-cut" data-go="tasks">回到任务板</button>`}<button class="eg-back" data-go="home">回到角色</button></div></section>`;
 }
 function busyJob(kind, id) {
   return jobs.find((j) => j.kind === kind && (!id || j.id === id));
@@ -159,27 +390,9 @@ function taskList() {
       skills: [],
     }));
   for (const g of activeGoals()) {
-    const plan = state.skillPlans?.[g.id];
-    if (plan) {
-      for (const t of plan.tasks) {
-        // Scheduled copies use their own completion record, so do not offer a second shortcut.
-        if (list.some((p) => p.goal === g.id && p.name === t.name)) continue;
-        list.push({
-          ...t,
-          key: "skill:" + g.id + ":" + t.id,
-          skillTaskId: t.id,
-          goal: g.id,
-          title: t.name,
-          plan: null,
-          skills: t.skillIds,
-          steps: t.actions,
-          resources: plan.resources.filter((r) => t.resourceIds.includes(r.id)),
-          done: state.records.some(
-            (r) => r.goal === g.id && r.skillTaskId === t.id && r.day === day(),
-          ),
-        });
-      }
-    } else if (!g.skillJobId) {
+    // Skill-plan tasks are main quests now; only goals without a plan keep the stage fallback.
+    if (state.skillPlans?.[g.id]) continue;
+    if (!g.skillJobId) {
       const stage = g.stages[g.stage];
       if (stage)
         list.push({
@@ -213,7 +426,7 @@ function goalIcon(g) {
   return skillIcons[n?.icon] || "flag";
 }
 function quest(g, tasks) {
-  return `<section class="eg-quest"><div class="eg-quest-head"><span class="eg-symbol">${ic(goalIcon(g))}</span><div style="flex:1;min-width:0"><h3>${esc(g.title)}</h3><small>${status(g.status)} · 每次 ${g.minutes} 分钟</small></div><button class="eg-small-action eg-inline" data-goal="${g.id}">${ic("route")}路线</button></div>${tasks.map(taskRow).join("")}${!tasks.length ? `<p class="eg-muted">${g.status === "draft" ? "路线准备好后，确认开始。" : g.skillJobId ? "正在准备任务与能力分支。" : "从路线中选择下一步。"}</p>` : ""}</section>`;
+  return `<section class="eg-quest"><div class="eg-quest-head"><span class="eg-symbol">${ic(goalIcon(g))}</span><div style="flex:1;min-width:0"><h3>${esc(g.title)}</h3><small>${status(g.status)} · 每次 ${g.minutes} 分钟</small></div><button class="eg-small-action eg-inline" data-goal="${g.id}">${ic("route")}路线</button></div>${tasks.map(taskRow).join("")}${!tasks.length ? `<p class="eg-muted">${g.status === "draft" ? "路线准备好后，确认开始。" : goalQuests(g.id).length ? `${goalQuests(g.id).filter((q) => q.status === "delivered").length} / ${goalQuests(g.id).length} 个主线任务已交付` : g.skillJobId ? "正在准备任务与能力分支。" : "从路线中选择下一步。"}</p>` : ""}</section>`;
 }
 function xpValues() {
   return names.map((_, i) =>
@@ -318,19 +531,38 @@ function render() {
   const list = taskList(),
     todayRecords = state.records.filter((r) => r.day === day());
   if (page === "home") {
-    const next = list.find((t) => !t.done) || list[0],
-      g = next
-        ? goals().find((g) => g.id === next.goal)
-        : goals().find((g) => g.status === "draft") || activeGoals()[0];
-    main.innerHTML = `<div class="eg-eyebrow">YOUR EVERYDAY ADVENTURE</div><div class="eg-person-title"><h1>${esc(state.profile.name)}</h1><button class="eg-round" data-go="profile" aria-label="查看角色档案">${ic("contact-round")}</button></div><p class="eg-muted eg-greeting">今天，也向想成为的自己靠近一点。</p><div class="eg-hero"><div class="eg-avatar"><canvas width="90" height="114" role="img" aria-label="像素冒险者"></canvas><span>LV. ${String(1 + Math.floor(state.levelXp / rules.xpPerLevel)).padStart(2, "0")} · 探索者</span></div>${radar()}</div><div class="eg-xp"><div class="eg-row"><small class="eg-inline">${ic("sparkles")}距离下一级</small><small>${state.levelXp % rules.xpPerLevel} / ${rules.xpPerLevel} XP</small></div><div class="eg-track"><div style="width:${((state.levelXp % rules.xpPerLevel) / rules.xpPerLevel) * 100}%"></div></div></div><div class="eg-section-title"><h2>今天的小小前进</h2><button class="eg-text-button" data-go="tasks">${list.filter((t) => t.done).length} / ${list.length} · 全部 ↗</button></div>${g ? quest(g, list.filter((t) => t.goal === g.id).slice(0, 2)) : next ? `<section class="eg-quest">${taskRow(next)}</section>` : empty("从下方「＋」开始你的第一条主线。")}<div class="eg-footnote">${ic("sprout")}先做好眼前这一步。</div>`;
+    const track = tracker(),
+      g = track
+        ? null
+        : goals().find((g) => g.status === "draft") || activeGoals()[0],
+      open = quests().filter((q) => q.status === "accepted").length,
+      todayDone = state.records.filter(
+        (r) => r.day === day() && r.questId,
+      ).length;
+    main.innerHTML = `<div class="eg-eyebrow">YOUR EVERYDAY ADVENTURE</div><div class="eg-person-title"><h1>${esc(state.profile.name)}</h1><button class="eg-round" data-go="profile" aria-label="查看角色档案">${ic("contact-round")}</button></div><p class="eg-muted eg-greeting">今天，也向想成为的自己靠近一点。</p><div class="eg-hero"><div class="eg-avatar"><canvas width="90" height="114" role="img" aria-label="像素冒险者"></canvas><span>LV. ${String(1 + Math.floor(state.levelXp / rules.xpPerLevel)).padStart(2, "0")} · 探索者</span></div>${radar()}</div><div class="eg-xp"><div class="eg-row"><small class="eg-inline">${ic("sparkles")}距离下一级</small><small>${state.levelXp % rules.xpPerLevel} / ${rules.xpPerLevel} XP · 今日 ${todayGain()} / ${rules.dailyXpCap}</small></div><div class="eg-track"><div style="width:${((state.levelXp % rules.xpPerLevel) / rules.xpPerLevel) * 100}%"></div></div></div><div class="eg-section-title"><h2>当前任务</h2><button class="eg-text-button" data-go="tasks">进行中 ${open} · 今日交付 ${todayDone} ↗</button></div>${track || (g ? quest(g, list.filter((t) => t.goal === g.id).slice(0, 2)) : empty("从下方「＋」开始你的第一条主线。"))}${
+      list.filter((t) => !t.done && t.plan).length
+        ? `<div class="eg-section-title"><h2>今日安排</h2></div><section class="eg-quest">${list
+            .filter((t) => t.plan)
+            .map(taskRow)
+            .join("")}</section>`
+        : ""
+    }<div class="eg-footnote">${ic("sprout")}先做好眼前这一步。</div>`;
   } else if (page === "tasks") {
+    const boards = goals().filter(
+        (g) =>
+          ["active", "paused"].includes(g.status) && goalQuests(g.id).length,
+      ),
+      legacy = goals().filter(
+        (g) =>
+          !goalQuests(g.id).length &&
+          (g.status === "draft" || list.some((t) => t.goal === g.id)),
+      );
     main.innerHTML =
-      head("QUEST JOURNAL", "我的任务", "scroll-text") +
-      `<div class="eg-segments"><button data-tab="today" aria-pressed="${tab === "today"}">${ic("list-checks")}今日待办</button><button data-tab="goals" aria-pressed="${tab === "goals"}">${ic("flag")}全部主线 · ${goals().length}</button></div>` +
+      head("QUEST BOARD", "任务板", "scroll-text") +
+      `<div class="eg-segments"><button data-tab="today" aria-pressed="${tab === "today"}">${ic("swords")}当前任务</button><button data-tab="goals" aria-pressed="${tab === "goals"}">${ic("flag")}全部主线 · ${goals().length}</button></div>` +
       (tab === "today"
-        ? list.length
-          ? goals()
-              .filter((g) => list.some((t) => t.goal === g.id))
+        ? boards.map(goalBoard).join("") +
+            legacy
               .map((g) =>
                 quest(
                   g,
@@ -338,14 +570,26 @@ function render() {
                 ),
               )
               .join("") +
-            list
-              .filter((t) => !t.goal)
-              .map(taskRow)
-              .join("")
-          : empty("今天还没有任务。可以新增目标，或查看已有主线。")
+            (list.filter((t) => !t.goal).length
+              ? `<section class="eg-quest"><h3>今日安排</h3>${list
+                  .filter((t) => !t.goal)
+                  .map(taskRow)
+                  .join("")}</section>`
+              : "") || empty("还没有任务。从下方「＋」开始一条主线。")
         : goals()
             .map((g) => quest(g, []))
             .join("") || empty("你的下一段冒险，从一个想法开始。"));
+  } else if (page === "quest") {
+    const q = questOf(questId);
+    main.innerHTML = q
+      ? questPage(q)
+      : back("tasks", "任务板") + empty("这项任务已变更，请返回任务板。");
+  } else if (page === "settle") {
+    if (!settle) {
+      go("tasks");
+      return;
+    }
+    main.innerHTML = settlePage();
   } else if (page === "task") {
     const t = list.find((t) => t.key === detailId);
     if (!t) {
@@ -370,12 +614,14 @@ function render() {
       head("YOUR ROUTE", g.title, "route") +
       `<div class="eg-task-meta"><span>${ic("flag")}${status(g.status)}</span><span>${ic("clock-3")}每次 ${g.minutes} 分钟</span></div><p class="eg-muted">${esc(g.base)}</p>${g.status === "draft" ? jobNotice("route", g.routeJobId) + primary(g.draft ? "查看路线并确认" : "继续准备路线", "resume", g.id) : ""}${(p?.strategy || g.stages.map((s, i) => ({ name: s.name, approach: s.steps, timing: i === g.stage ? "现在" : "接下来" }))).map((s) => `<section class="eg-route-phase"><small>${esc(s.timing)}</small><h3>${esc(s.name)}</h3><p>${esc(planningText(s.approach))}</p></section>`).join("")}${
         g.status === "active"
-          ? `<h3 style="margin-top:25px">当前任务</h3>${list
-              .filter((t) => t.goal === g.id)
-              .map(taskRow)
-              .join(
-                "",
-              )}${!p ? jobNotice("skills", g.skillJobId) : ""}${!p && !["queued", "running"].includes(busyJob("skills", g.skillJobId)?.status) ? primary("生成任务与能力分支", "skills", g.id) : ""}`
+          ? `<h3 style="margin-top:25px">主线任务</h3>${
+              goalQuests(g.id).length
+                ? goalQuests(g.id).map(questRow).join("")
+                : list
+                    .filter((t) => t.goal === g.id)
+                    .map(taskRow)
+                    .join("")
+            }${!p ? jobNotice("skills", g.skillJobId) : ""}${!p && !["queued", "running"].includes(busyJob("skills", g.skillJobId)?.status) ? primary("生成任务与能力分支", "skills", g.id) : ""}`
           : ""
       }<div style="margin-top:20px">${skillTags(p?.targetSkillIds || [])}</div><div class="eg-actions">${["active", "paused"].includes(g.status) ? `<button data-act="status" data-id="${g.id}">${g.status === "paused" ? "恢复主线" : "暂停主线"}</button>` : ""}<a class="eg-full-link" href="advanced.html">更多路线与评估操作 ↗</a></div>`;
   } else if (page === "growth") {
@@ -396,6 +642,7 @@ function render() {
           tasks: plans.flatMap((p) => p.tasks),
         },
         state.personalTree.goals,
+        state.skillProgress || {},
       );
   } else if (page === "journal") {
     const dates = Array.from({ length: 7 }, (_, i) => {
@@ -409,9 +656,24 @@ function render() {
           .reduce((a, r) => a + r.minutes, 0),
       ),
       max = Math.max(...mins, 1);
+    const loot = [...(state.loot || [])].reverse();
     main.innerHTML =
-      head("LITTLE THINGS ADD UP", "成长留下的痕迹", "notebook-pen") +
-      `<div class="eg-kicker">${mins.reduce((a, b) => a + b, 0)}<small> 分钟</small></div><small>最近七天为自己投入的时间</small><div class="eg-week-bars" role="img" aria-label="近七日投入分钟数：${mins.join("、")}">${dates.map((d, i) => `<div class="eg-week-col ${i === 6 ? "today" : ""}"><small>${mins[i] || "—"}</small><span class="eg-week-bar" style="height:${Math.max(3, (mins[i] / max) * 65)}px"></span><small>${d.slice(5)}</small></div>`).join("")}</div><h3 style="margin-top:25px">行动记录</h3>${
+      head(
+        "INVENTORY",
+        "行囊",
+        "backpack",
+        "你亲手做出来的东西，和留下的每一步。",
+      ) +
+      `<div class="eg-section-title"><h2>战利品</h2><small>${loot.length} 件</small></div>${
+        loot.length
+          ? `<div class="q-loot-list">${loot
+              .map(
+                (l) =>
+                  `<details class="q-loot-item q-cut"><summary>${ic(l.type === "log" ? "clipboard-list" : "scroll-text")}<span><strong>${esc(l.name)}</strong><small>${esc(dateOf(l.createdAt))} · ${esc(questOf(l.quest)?.title || "主线任务")}</small></span></summary>${l.content ? `<pre>${esc(l.content)}</pre>` : ""}${l.fields.length ? `<dl>${l.fields.map((f) => `<dt>${esc(f.label)}</dt><dd>${esc(f.value)}${f.unit ? " " + esc(f.unit) : ""}</dd>`).join("")}</dl>` : ""}${l.note ? `<p class="eg-muted">${esc(l.note)}</p>` : ""}</details>`,
+              )
+              .join("")}</div>`
+          : `<p class="eg-muted">交付主线任务时写下的成果会出现在这里。</p>`
+      }<div class="eg-section-title"><h2>投入记录</h2></div><div class="eg-kicker">${mins.reduce((a, b) => a + b, 0)}<small> 分钟</small></div><small>最近七天为自己投入的时间</small><div class="eg-week-bars" role="img" aria-label="近七日投入分钟数：${mins.join("、")}">${dates.map((d, i) => `<div class="eg-week-col ${i === 6 ? "today" : ""}"><small>${mins[i] || "—"}</small><span class="eg-week-bar" style="height:${Math.max(3, (mins[i] / max) * 65)}px"></span><small>${d.slice(5)}</small></div>`).join("")}</div><h3 style="margin-top:25px">行动记录</h3>${
         [...state.records]
           .reverse()
           .slice(0, 30)
@@ -434,12 +696,11 @@ function render() {
           "",
         )}</div><form data-form="profile"><label for="profile-name">角色名字</label><input id="profile-name" name="name" maxlength="30" value="${esc(state.profile.name)}" required><label for="profile-daily">每天可以留给自己的时间（分钟）</label><input id="profile-daily" name="daily" type="number" min="5" max="1440" value="${state.profile.daily}" required><p class="eg-error" role="alert"></p><button class="eg-primary" type="submit">保存档案</button></form><a class="eg-full-link" href="advanced.html">时间轴、成果评估与完整管理 ↗</a><button class="eg-back" data-act="logout">退出登录</button>`;
   }
-  const active =
-    page === "task" || page === "goal"
-      ? "tasks"
-      : page === "profile"
-        ? "home"
-        : page;
+  const active = ["task", "goal", "quest", "settle"].includes(page)
+    ? "tasks"
+    : page === "profile"
+      ? "home"
+      : page;
   nav
     .querySelectorAll("[data-page]")
     .forEach((b) =>
@@ -452,9 +713,81 @@ function render() {
   icons();
   bindForms();
 }
+function bindQuestForm(f) {
+  const q = questOf(questId);
+  if (!q) return;
+  const d = draftOf(q);
+  const refreshButton = () => {
+    const b = f.querySelector("[type=submit]"),
+      blocker = blockerOf(q, d);
+    b.disabled = !!blocker;
+    b.innerHTML = blocker
+      ? esc(blocker)
+      : ic("check") + (q.delivery.type === "confirm" ? "完成" : "交付任务");
+    const m = Math.max(0, Math.floor(d.minutes) || 0);
+    f.querySelector('[data-preview="xp"]').textContent = "+" + previewXp(m);
+    f.querySelectorAll('[data-preview="skill"]').forEach(
+      (el) => (el.textContent = "+" + Math.min(120, m)),
+    );
+    icons();
+  };
+  f.querySelectorAll("[data-draft]").forEach(
+    (el) =>
+      (el.oninput = () => {
+        d[el.dataset.draft] =
+          el.dataset.draft === "minutes" ? Number(el.value) || 0 : el.value;
+        refreshButton();
+      }),
+  );
+  f.querySelectorAll("[data-field]").forEach(
+    (el) =>
+      (el.oninput = () => {
+        d.fields[el.dataset.field] = el.value;
+        refreshButton();
+      }),
+  );
+  f.onsubmit = async (e) => {
+    e.preventDefault();
+    const b = f.querySelector("[type=submit]"),
+      err = f.querySelector(".eg-error");
+    if (blockerOf(q, d)) return;
+    if (!(d.minutes >= 1 && d.minutes <= 1440)) {
+      err.textContent = "实际投入需要在 1 到 1440 分钟之间";
+      return;
+    }
+    b.disabled = true;
+    err.textContent = "";
+    try {
+      const fields = {};
+      for (const f2 of q.delivery.fields) {
+        const v = String(d.fields[f2.key] ?? "").trim();
+        if (v) fields[f2.key] = f2.kind === "number" ? Number(v) : v;
+      }
+      const r = await command({
+        type: "quest.deliver",
+        id: q.id,
+        day: day(),
+        minutes: Math.round(d.minutes),
+        note: d.note.trim(),
+        ...(q.delivery.type === "text" ? { content: d.content } : {}),
+        ...(q.delivery.type === "log" ? { fields } : {}),
+      });
+      drafts.delete(q.id);
+      settle = { quest: q, result: r.result };
+      go("settle");
+    } catch (e) {
+      err.textContent = e.message;
+      b.disabled = false;
+    }
+  };
+}
 function bindForms() {
   const f = main.querySelector("form");
   if (!f) return;
+  if (f.dataset.form === "deliver") {
+    bindQuestForm(f);
+    return;
+  }
   f.onsubmit = async (e) => {
     e.preventDefault();
     if (!f.reportValidity()) return;
@@ -825,6 +1158,50 @@ root.addEventListener("click", async (e) => {
   if (b.dataset.task) {
     detailId = b.dataset.task;
     go("task");
+    return;
+  }
+  if (b.dataset.quest) {
+    questId = b.dataset.quest;
+    go("quest");
+    return;
+  }
+  if (b.dataset.qact) {
+    const id = b.dataset.id,
+      q = questOf(id);
+    if (!q) return;
+    if (b.dataset.qact === "minus" || b.dataset.qact === "plus") {
+      const d = draftOf(q);
+      d.minutes = Math.max(
+        1,
+        Math.min(1440, (d.minutes || 0) + (b.dataset.qact === "plus" ? 5 : -5)),
+      );
+      render();
+      return;
+    }
+    b.disabled = true;
+    try {
+      if (b.dataset.qact === "objective")
+        await command({
+          type: "quest.objective",
+          id,
+          objective: b.dataset.objective,
+          done: b.dataset.done === "true",
+        });
+      else {
+        await command({ type: "quest." + b.dataset.qact, id });
+        if (b.dataset.qact === "accept") {
+          questId = id;
+          toast("已接取，开始追踪。");
+          go("quest");
+        } else if (b.dataset.qact === "abandon") toast("已放弃，进度已保留。");
+        else if (b.dataset.qact === "track") toast("正在追踪这个任务。");
+      }
+      render();
+    } catch (e) {
+      toast(e.message);
+    } finally {
+      b.disabled = false;
+    }
     return;
   }
   if (b.dataset.goal) {

@@ -22,7 +22,7 @@ test("clarification questions are bounded, stored and never execute proposals", 
     }),
   );
 });
-test("generated task records validate identity and reject same-day duplicate XP", () => {
+test("generated task records validate identity and cannot bypass quest delivery", () => {
   const s = initialState(),
     id = "9c6f9f51-ec3a-4bd0-8b0b-e9d25b842b34";
   s.goals.push({ id, status: "active", deletedAt: null });
@@ -39,11 +39,10 @@ test("generated task records validate identity and reject same-day duplicate XP"
     note: "",
     completion: "done",
   };
-  const first = applyCommand(s, cmd, "2026-10-08T12:00:00Z");
-  assert.equal(first.state.levelXp, 4);
+  // Plan tasks are delivered as quests; the legacy record shortcut is closed.
   assert.throws(
-    () => applyCommand(first.state, cmd, "2026-10-08T12:00:00Z"),
-    /已经记录/,
+    () => applyCommand(s, cmd, "2026-10-08T12:00:00Z"),
+    /任务详情中交付/,
   );
   assert.throws(
     () => applyCommand(s, { ...cmd, name: "伪造任务" }, "2026-10-08T12:00:00Z"),
