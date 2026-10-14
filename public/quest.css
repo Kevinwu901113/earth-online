@@ -1,0 +1,606 @@
+/* Quest system: main-quest tracker, board rows, delivery, settlement and loot.
+   Builds on the mobile tokens; gold marks main quests, blue marks proficiency. */
+#earth-goal-preview .eg-phone {
+  --q-gold: light-dark(#8a5d00, #e8c15a);
+  --q-gold-fill: light-dark(#e3b341, #e8c15a);
+  --q-gold-ink: #1f1704;
+  --q-gold-soft: light-dark(#f6ead0, #3a3216);
+  --q-blue: light-dark(#1d5d96, #8ec5ff);
+  --q-boss: light-dark(#8e2525, #ff9a9a);
+  --q-boss-soft: light-dark(#f7e2e0, #2a1214);
+  --q-done: light-dark(#4f7d45, #8fbf77);
+}
+#earth-goal-preview .q-cut {
+  clip-path: polygon(
+    8px 0,
+    calc(100% - 8px) 0,
+    100% 8px,
+    100% calc(100% - 8px),
+    calc(100% - 8px) 100%,
+    8px 100%,
+    0 calc(100% - 8px),
+    0 8px
+  );
+}
+#earth-goal-preview .q-px {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+#earth-goal-preview .q-gold {
+  color: var(--q-gold);
+}
+#earth-goal-preview .q-blue {
+  color: var(--q-blue);
+}
+
+/* Tracker on the home page */
+#earth-goal-preview .q-tracker {
+  background:
+    linear-gradient(var(--q-gold-fill), var(--q-gold-fill)) top / 100% 3px
+      no-repeat,
+    var(--eg-panel);
+  padding: 16px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+#earth-goal-preview .q-tracker-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: baseline;
+  color: var(--eg-sub);
+}
+#earth-goal-preview .q-tracker-top small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+#earth-goal-preview .q-title {
+  margin: 0;
+  font-size: 21px;
+  line-height: 1.3;
+}
+#earth-goal-preview .q-mini {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+#earth-goal-preview .q-mini li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+  color: var(--eg-ink);
+}
+#earth-goal-preview .q-mini li small {
+  margin-left: auto;
+  color: var(--eg-sub);
+  flex: none;
+}
+#earth-goal-preview .q-mini li.done {
+  color: var(--eg-sub);
+  text-decoration: line-through;
+}
+#earth-goal-preview .q-mini li.next {
+  font-weight: 700;
+}
+#earth-goal-preview .q-mini li.next small {
+  color: var(--q-gold);
+}
+#earth-goal-preview .q-box {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  box-sizing: border-box;
+  border: 2px solid var(--eg-line);
+}
+#earth-goal-preview .q-mini li.next .q-box {
+  border-color: var(--q-gold);
+}
+#earth-goal-preview .q-mini li.done .q-box,
+#earth-goal-preview .q-box.on {
+  background: var(--q-done);
+  border-color: var(--q-done);
+}
+#earth-goal-preview .q-actions,
+#earth-goal-preview .q-settle-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+#earth-goal-preview .q-btn {
+  min-height: 46px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 15px;
+  background: var(--eg-soft);
+  color: var(--eg-ink);
+  border: 0;
+}
+#earth-goal-preview .q-btn-main {
+  flex: 1;
+  background: var(--q-gold-fill);
+  color: var(--q-gold-ink);
+}
+#earth-goal-preview .q-btn:disabled {
+  background: var(--eg-soft);
+  color: var(--eg-sub);
+  cursor: not-allowed;
+}
+#earth-goal-preview .q-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--eg-sub);
+}
+#earth-goal-preview .q-bar {
+  flex: 1;
+  height: 5px;
+  background: var(--eg-soft);
+  position: relative;
+  display: block;
+}
+#earth-goal-preview .q-bar > span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: var(--q-gold-fill);
+}
+
+/* Board */
+#earth-goal-preview .q-goal {
+  background: var(--eg-panel);
+  border: 1px solid var(--eg-line);
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+#earth-goal-preview .q-goal-head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+#earth-goal-preview .q-goal-head h3 {
+  margin: 2px 0;
+}
+#earth-goal-preview .q-goal-head small {
+  color: var(--eg-sub);
+}
+#earth-goal-preview .q-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 12px;
+  text-align: left;
+  background: var(--eg-paper);
+  border: 0;
+  border-left: 3px solid var(--eg-line);
+}
+#earth-goal-preview .q-row.q-available,
+#earth-goal-preview .q-row.q-accepted {
+  border-left-color: var(--q-gold-fill);
+}
+#earth-goal-preview .q-row.q-tracked {
+  background: var(--q-gold-soft);
+}
+#earth-goal-preview .q-row.q-locked,
+#earth-goal-preview .q-row.q-delivered {
+  color: var(--eg-sub);
+}
+#earth-goal-preview .q-row.q-delivered {
+  border-left-color: var(--q-done);
+}
+#earth-goal-preview .q-row-no {
+  color: var(--eg-sub);
+  flex: none;
+}
+#earth-goal-preview .q-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+#earth-goal-preview .q-row-title {
+  font-weight: 600;
+}
+#earth-goal-preview .q-row.q-delivered .q-row-title {
+  text-decoration: line-through;
+}
+#earth-goal-preview .q-row small {
+  color: var(--eg-sub);
+  font-size: 12px;
+}
+#earth-goal-preview .q-chip {
+  flex: none;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--eg-sub);
+}
+#earth-goal-preview .q-row.q-available .q-chip,
+#earth-goal-preview .q-row.q-tracked .q-chip {
+  color: var(--q-gold);
+  font-weight: 700;
+}
+#earth-goal-preview .q-chip svg {
+  width: 14px;
+  height: 14px;
+}
+#earth-goal-preview .q-boss {
+  margin-top: 6px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--q-boss-soft);
+  color: var(--eg-ink);
+  text-decoration: none;
+}
+#earth-goal-preview .q-boss .q-px,
+#earth-goal-preview .q-boss-go {
+  color: var(--q-boss);
+}
+#earth-goal-preview .q-boss small {
+  color: var(--eg-sub);
+}
+
+/* Quest detail */
+#earth-goal-preview .q-badges {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 6px;
+}
+#earth-goal-preview .q-badges small {
+  color: var(--eg-sub);
+}
+#earth-goal-preview .q-badge {
+  background: var(--q-gold-fill);
+  color: var(--q-gold-ink);
+  padding: 1px 6px;
+}
+#earth-goal-preview .q-badge.q-outline {
+  background: none;
+  color: var(--q-gold);
+  border: 1px solid var(--q-gold);
+}
+#earth-goal-preview .q-h1 {
+  margin: 8px 0 6px;
+  font-size: 26px;
+  line-height: 1.25;
+}
+#earth-goal-preview .q-flavor {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--eg-ink);
+}
+#earth-goal-preview .q-section {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+#earth-goal-preview .q-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  color: var(--eg-sub);
+  font-size: 12px;
+}
+#earth-goal-preview .q-obj {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+  min-height: 56px;
+  padding: 12px 14px;
+  text-align: left;
+  background: var(--eg-panel);
+  border: 0;
+  color: var(--eg-ink);
+}
+#earth-goal-preview .q-obj .q-box {
+  width: 18px;
+  height: 18px;
+  margin-top: 3px;
+  border-color: var(--q-gold);
+}
+#earth-goal-preview .q-obj-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+#earth-goal-preview .q-obj-title {
+  font-weight: 600;
+}
+#earth-goal-preview .q-obj small {
+  color: var(--eg-sub);
+  font-size: 12px;
+}
+#earth-goal-preview .q-obj.done .q-obj-title {
+  color: var(--eg-sub);
+  text-decoration: line-through;
+  font-weight: 400;
+}
+#earth-goal-preview .q-obj-min {
+  flex: none;
+}
+#earth-goal-preview .q-verify {
+  border: 1px solid var(--eg-line);
+  padding: 0 8px;
+  font-size: 11px;
+}
+#earth-goal-preview .q-deliver label {
+  margin-top: 8px;
+}
+#earth-goal-preview .q-req {
+  color: var(--q-boss);
+}
+#earth-goal-preview .q-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#earth-goal-preview .q-field input {
+  flex: 1;
+}
+#earth-goal-preview .q-minutes {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+}
+#earth-goal-preview .q-minutes [role="group"] {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#earth-goal-preview .q-minutes input {
+  width: 72px;
+  text-align: center;
+}
+#earth-goal-preview .q-step {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: var(--eg-soft);
+  color: var(--eg-ink);
+  border: 0;
+}
+#earth-goal-preview .q-rewards {
+  margin-top: 14px;
+  padding: 14px;
+  background: var(--eg-panel);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#earth-goal-preview .q-reward-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+#earth-goal-preview .q-reward-grid > div {
+  background: var(--eg-soft);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+#earth-goal-preview .q-reward-grid strong {
+  font-size: 18px;
+  color: var(--q-gold);
+}
+#earth-goal-preview .q-reward-grid strong.q-blue {
+  color: var(--q-blue);
+}
+#earth-goal-preview .q-reward-grid small {
+  color: var(--eg-sub);
+  font-size: 12px;
+}
+#earth-goal-preview .q-reward-line {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+#earth-goal-preview .q-reward-line svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--q-gold);
+}
+#earth-goal-preview .q-deliver .q-btn-main {
+  margin-top: 6px;
+  width: 100%;
+  flex: none;
+}
+#earth-goal-preview .q-locked {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--eg-sub);
+  margin-top: 20px;
+}
+#earth-goal-preview .q-subactions {
+  margin-top: 12px;
+}
+
+/* Settlement */
+#earth-goal-preview .q-settle {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+#earth-goal-preview .q-settle-head {
+  text-align: center;
+  padding: 12px 0 6px;
+}
+#earth-goal-preview .q-settle-head .q-px {
+  letter-spacing: 0.25em;
+  font-size: 12px;
+}
+#earth-goal-preview .q-settle-head h1 {
+  margin: 6px 0 2px;
+  font-size: 30px;
+}
+#earth-goal-preview .q-card {
+  background: var(--eg-panel);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+#earth-goal-preview .q-card .eg-row > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+#earth-goal-preview .q-card strong.q-px {
+  font-size: 20px;
+}
+#earth-goal-preview .q-bar-lg {
+  height: 10px;
+  flex: none;
+}
+#earth-goal-preview .q-bar .q-gain {
+  background: var(--q-gold);
+  animation: q-grow 900ms ease-out both;
+  transform-origin: left;
+}
+@keyframes q-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #earth-goal-preview .q-bar .q-gain {
+    animation: none;
+  }
+}
+#earth-goal-preview .q-loot {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  background:
+    linear-gradient(var(--q-gold-fill), var(--q-gold-fill)) top / 100% 2px
+      no-repeat,
+    var(--eg-panel);
+}
+#earth-goal-preview .q-loot > div {
+  display: flex;
+  flex-direction: column;
+}
+#earth-goal-preview .q-loot-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  background: var(--q-gold-soft);
+  color: var(--q-gold);
+  flex: none;
+}
+#earth-goal-preview .q-segbar {
+  display: flex;
+  gap: 4px;
+}
+#earth-goal-preview .q-segbar span {
+  flex: 1;
+  height: 8px;
+  background: var(--eg-soft);
+}
+#earth-goal-preview .q-segbar span.on {
+  background: var(--q-gold-fill);
+}
+
+/* Inventory */
+#earth-goal-preview .q-loot-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+#earth-goal-preview .q-loot-item {
+  background: var(--eg-panel);
+  padding: 12px 14px;
+}
+#earth-goal-preview .q-loot-item summary {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  cursor: pointer;
+  min-height: 40px;
+}
+#earth-goal-preview .q-loot-item summary svg {
+  color: var(--q-gold);
+  flex: none;
+}
+#earth-goal-preview .q-loot-item summary span {
+  display: flex;
+  flex-direction: column;
+}
+#earth-goal-preview .q-loot-item summary small {
+  color: var(--eg-sub);
+}
+#earth-goal-preview .q-loot-item pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font: inherit;
+  font-size: 13px;
+  background: var(--eg-paper);
+  padding: 10px;
+  margin: 10px 0 0;
+}
+#earth-goal-preview .q-loot-item dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 10px 0 0;
+  font-size: 13px;
+}
+#earth-goal-preview .q-loot-item dt {
+  color: var(--eg-sub);
+}
+#earth-goal-preview .q-loot-item dd {
+  margin: 0;
+}
+
+/* Skill tree proficiency */
+.personal-node.grown {
+  box-shadow: 0 0 0 3px light-dark(#e3b34155, #e8c15a55);
+}
+.personal-node.grown.tier-2 {
+  box-shadow: 0 0 0 3px light-dark(#e3b341aa, #e8c15aaa);
+}
+.personal-node.grown.tier-3,
+.personal-node.grown.tier-4 {
+  box-shadow:
+    0 0 0 3px light-dark(#e3b341, #e8c15a),
+    0 0 12px light-dark(#e3b34188, #e8c15a88);
+}

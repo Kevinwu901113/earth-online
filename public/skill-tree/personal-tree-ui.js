@@ -1,6 +1,12 @@
 import { skillIcons as icons } from "./skill-icons.js";
 import { nodeLabel } from "./node-label.js";
-export function renderPersonalTree(root, plan, goals = []) {
+const TIERS = [
+  [1, "萌芽"],
+  [120, "成长"],
+  [600, "熟练"],
+  [1800, "精通"],
+];
+export function renderPersonalTree(root, plan, goals = [], progress = {}) {
   const wrap = document.createElement("section");
   wrap.className = "personal-tree";
   const viewport = document.createElement("div");
@@ -34,12 +40,34 @@ export function renderPersonalTree(root, plan, goals = []) {
       ...plan.tasks.flatMap((t) => t.skillIds),
     ]),
     goalSkills = new Set(goals.flatMap((g) => g.targetSkillIds)),
-    scores = new Map();
+    scores = new Map(),
+    totals = new Map();
+  // Effort credited to a node and everything under it (quest deliveries).
+  function grown(id) {
+    if (totals.has(id)) return totals.get(id);
+    const own = progress[id] || { points: 0, minutes: 0, quests: 0 },
+      t = children(id).reduce(
+        (sum, c) => {
+          const v = grown(c.id);
+          return {
+            points: sum.points + v.points,
+            minutes: sum.minutes + v.minutes,
+            quests: sum.quests + v.quests,
+          };
+        },
+        { points: own.points, minutes: own.minutes, quests: own.quests },
+      );
+    totals.set(id, t);
+    return t;
+  }
+  const tierOf = (points) =>
+    TIERS.reduce((tier, [min], i) => (points >= min ? i + 1 : tier), 0);
   function importance(id) {
     if (scores.has(id)) return scores.get(id);
     const n = nodes.get(id),
       score = Math.max(
         currentSkills.has(id) ? 100 : 0,
+        grown(id).points > 0 ? 80 : 0,
         goalSkills.has(id) ? 60 : 0,
         n.baseline?.status === "lit" ? 30 : 0,
         ...children(id).map((c) => importance(c.id)),
@@ -172,10 +200,16 @@ export function renderPersonalTree(root, plan, goals = []) {
       button.className =
         "personal-node " +
         n.kind +
-        (n.baseline?.status === "lit" ? " lit" : "");
+        (n.baseline?.status === "lit" ? " lit" : "") +
+        (grown(id).points > 0 ? " grown tier-" + tierOf(grown(id).points) : "");
       button.style.left = x + "px";
       button.style.top = y + "px";
       button.setAttribute("aria-label", n.name);
+      if (grown(id).points > 0)
+        button.setAttribute(
+          "aria-description",
+          "熟练度：" + TIERS[tierOf(grown(id).points) - 1][1],
+        );
       button.setAttribute("aria-pressed", id === selected);
       if (children(id).length)
         button.setAttribute("aria-expanded", expanded.has(id));
@@ -222,11 +256,13 @@ export function renderPersonalTree(root, plan, goals = []) {
       ["p", n.description],
       [
         "small",
-        n.kind === "core" || ["body", "mind", "practice"].includes(n.id)
-          ? "固定入口"
-          : n.baseline?.status === "lit"
-            ? "已点亮 · 用户自述"
-            : "基础未知 · 不代表不会",
+        grown(selected).points > 0
+          ? `${TIERS[tierOf(grown(selected).points) - 1][1]} · 熟练度 ${grown(selected).points} · 投入 ${grown(selected).minutes} 分钟 · 完成 ${grown(selected).quests} 个任务`
+          : n.kind === "core" || ["body", "mind", "practice"].includes(n.id)
+            ? "固定入口"
+            : n.baseline?.status === "lit"
+              ? "已点亮 · 用户自述"
+              : "基础未知 · 不代表不会",
       ],
     ]) {
       const e = document.createElement(tag);

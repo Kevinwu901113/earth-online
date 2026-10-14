@@ -9,6 +9,7 @@ export const skillGoalId = (id) => "goal_" + id.replaceAll("-", "");
 export const skillPrompt = `为已经保存的用户目标生成长期个人技能树增量及当前批次任务。只输出{plan,treePatch} JSON。
 context.goals[0]是本次目标，不得改变目标。plan.goal.title/target/minutes分别照抄目标title/criterion/minutes；treePatch.goalId照抄context.skillGoalId，requestId照抄context.treeRequestId，baseRevision照抄context.personalTree.revision。
 plan为earth.plan.v3；任务不是验收，action.detail写清具体步骤、资源和遇到困难怎么办。行动分钟之和等于任务分钟，任务总时长不超过目标minutes。只把影响练习的起点或材料假设写入assumptions，不能伪称已知。技能树不是路线阶段，技能在不同目标之间长期复用。
+任务按顺序解锁，前一个任务的成果应能被后一个任务用到。每个任务给出deliverable：会产出文字的任务用text，prompt说明贴什么、name给成果起短名（如「五栏英文提纲」）；运动、练习类用log，fields列1至4个要记录的数字或短文字（如最多次数、组数、用时），name如「基线记录」；不需要成果的生活小事用confirm。只要求用户能用文字提交的内容，不要求录音、照片、文件或链接。
 resources中verified_link只能用earth_search或context.knowledge实际返回的来源；缺资料用needs_user，对应task标记needs_material，materialQuestion说明需要什么。stat为0知识/1胆量/2灵巧/3温柔/4魅力。
 个人树的根永远是self（我），一级只有body身心、mind认知、practice实践，二级骨架已在context.personalTree.nodes中给出。不能新造英语核心、改写骨架或让新节点直接挂self。语言挂language，健身基础挂physical等已存在二级入口。
 treePatch={schemaVersion:"earth.tree.patch.v1",baseRevision:context.personalTree.revision,requestId:context.treeRequestId,goalId,addNodes,reuseNodeIds,updateNodes}。addNodes使用节点字段id,name,description,icon,kind(domain/ability)，milestone固定null,parentId,prerequisites,baseline,stat,milestone。只增加缺少的节点，不重复返回已有节点。已有同义能力也应复用，不换ID新建。reuseNodeIds列出本次使用的已有具体能力；updateNodes只允许修改已复用且非骨架节点的description，不改已有基础或进度。

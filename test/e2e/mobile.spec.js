@@ -7,7 +7,7 @@ import {
   applyCommand,
   settleJob,
 } from "../../src/domain.js";
-import { commandSchema } from "../../src/schemas.js";
+import { userCommandSchema } from "../../src/schemas.js";
 import { skillFixture } from "../skill-fixture.js";
 import { skillGoalId } from "../../src/skill-tree/generation.js";
 test.use({
@@ -116,7 +116,7 @@ test("mobile shell: real command contracts, clarification, route confirmation, s
             status: 409,
             json: { error: "Version conflict" },
           });
-        const cmd = commandSchema.parse(body.command);
+        const cmd = userCommandSchema.parse(body.command);
         commands.push(cmd);
         const result = applyCommand(state, cmd);
         state = result.state;
@@ -189,22 +189,35 @@ test("mobile shell: real command contracts, clarification, route confirmation, s
   await page.getByRole("button", { name: "查看路线并确认" }).click();
   await page.getByRole("button", { name: "确认路线并加入" }).click();
   await expect(page.locator(".eg-overlay")).toBeHidden();
-  await expect(page.locator("[data-task]").first()).toBeVisible({
+  await expect(page.locator("[data-quest]").first()).toBeVisible({
     timeout: 12000,
   });
-  await page.locator("[data-task]").first().click();
-  await expect(page.locator(".eg-steps li").first()).toBeVisible();
+  await page.locator("[data-quest]").first().click();
+  await page.getByRole("button", { name: "接取任务", exact: true }).click();
+  await expect(page.locator("button.q-obj").first()).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /还差 \d+ 个目标项/ }),
+  ).toBeDisabled();
+  const objectives = page.locator("button.q-obj");
+  for (let i = 0; i < (await objectives.count()); i++) {
+    await objectives.nth(i).click();
+    await expect(objectives.nth(i)).toHaveAttribute("aria-pressed", "true");
+  }
   await page.screenshot({
     path: "test-results/mobile-task.png",
     fullPage: true,
   });
-  await page.getByRole("button", { name: "我完成了", exact: true }).click();
-  await expect(
-    page.getByText("今天的投入已记录，经验以服务器记录为准。"),
-  ).toBeVisible();
-  expect(commands.filter((c) => c.type === "action.record")).toHaveLength(1);
+  await page.getByRole("button", { name: "交付任务", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "任务完成" })).toBeVisible();
+  await page.screenshot({
+    path: "test-results/mobile-settle.png",
+    fullPage: true,
+  });
+  expect(commands.filter((c) => c.type === "quest.deliver")).toHaveLength(1);
+  expect(commands.filter((c) => c.type === "action.record")).toHaveLength(0);
   expect(state.records).toHaveLength(1);
   expect(state.levelXp).toBeGreaterThan(0);
+  expect(Object.keys(state.skillProgress).length).toBeGreaterThan(0);
   await page.reload();
   await page.locator("[data-page=journal]").click();
   await expect(page.locator(".eg-log")).toHaveCount(1);

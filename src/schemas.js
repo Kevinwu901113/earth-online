@@ -178,6 +178,39 @@ export const commandSchema = z.discriminatedUnion("type", [
     criteria: text(3000),
   }),
 ]);
+// Quest commands are user actions only; they are deliberately not part of
+// commandSchema, so chat proposals can never deliver or accept quests.
+const questId = text(120);
+export const questCommandSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("quest.accept"), id: questId }).strict(),
+  z.object({ type: z.literal("quest.abandon"), id: questId }).strict(),
+  z.object({ type: z.literal("quest.track"), id: questId }).strict(),
+  z
+    .object({
+      type: z.literal("quest.objective"),
+      id: questId,
+      objective: text(20),
+      done: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("quest.deliver"),
+      id: questId,
+      day: date,
+      minutes: z.number().int().min(1).max(1440),
+      note: z.string().max(3000).default(""),
+      content: z.string().max(12000).optional(),
+      fields: z
+        .record(z.string().max(40), z.union([z.string().max(200), z.number()]))
+        .optional(),
+    })
+    .strict(),
+]);
+export const userCommandSchema = z.discriminatedUnion("type", [
+  ...commandSchema.options,
+  ...questCommandSchema.options,
+]);
 export const guidanceSchema = z
   .object({
     title: text(120),
@@ -240,6 +273,6 @@ export const credentialsSchema = z
 export const envelopeSchema = z
   .object({
     expectedVersion: z.number().int().nonnegative(),
-    command: commandSchema,
+    command: userCommandSchema,
   })
   .strict();
